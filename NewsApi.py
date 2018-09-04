@@ -6,12 +6,16 @@
 #import newsapi
 import requests
 import csv
+import os
+
+#import API key (environment variable)
+newsapiKey = os.environ['NEWSAPI_KEY']
 
 def NewsFromBBC(j):
   
     # BBC news api
     for i in range(1,j):
-        main_url = " https://newsapi.org/v2/everything?sources=bbc-news&pageSize=100&page=" + str(i) + "&apiKey=abd1cde781dc46b385045b20e214a7e8"   
+        main_url = " https://newsapi.org/v2/everything?sources=bbc-news&pageSize=100&page=" + str(i) + "&apiKey=" + newsapiKey  
         # fetching data in json format
              
         articlesToCSV(main_url,i)
