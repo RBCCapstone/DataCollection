@@ -1,6 +1,6 @@
 # News API
 # This script pulls data from various news sources
-# Written by Jesse & Jade
+# Written by Jessie & Jade
 
 
 #import newsapi
@@ -65,7 +65,7 @@ def articlesToCSV(main_url, k):
         url.append(ar["url"])        
 
              # writing all trending news to csv        
-    with open('articles.csv', 'a', newline='',encoding='utf-8') as f:
+    with open('articles.csv', 'a', newline='',encoding='utf-8-sig') as f:
         articlewriter = csv.writer(f, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(len(titles)):
             s = (((k-1)*100) + i + 1, titles[i], description[i], url[i] )
@@ -76,6 +76,7 @@ def articlesToCSV(main_url, k):
 # Driver Code
 if __name__ == '__main__': 
     # function call
-    #querylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonalds", "McDonald", "McDonald's", "Costco", "Lowe", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "Chart Communication", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
+    #News APi can only take 20 queries
+    #querylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
     querylisttemp = ["Marriott","tjx","Disney"]
     NewsFromBBC(querylisttemp) 
