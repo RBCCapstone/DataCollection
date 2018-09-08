@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # News API
 # This script pulls data from various news sources
 # Written by Jesse & Jade
