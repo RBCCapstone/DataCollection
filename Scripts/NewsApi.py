@@ -44,7 +44,7 @@ def NewsFromBBC(querylist):
         articlesToCSV(main_url, j)
         j = j + 1
         main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=bloomberg,business-insider,cnbc,fortune,financial-times,financial-post,the-economist,\
-        the-wall-street-journal&pageSize=100&page=" + str(j) + "&apiKey=" + newsapiKey  
+        the-wall-street-journal&from=2018-07-01&to=2018-09-19&pageSize=100&page=" + str(j) + "&apiKey=" + newsapiKey  
         totalResults = totalResults - 100 
         #print(totalResults)
         #print(j)
@@ -58,17 +58,21 @@ def articlesToCSV(main_url, k):
     titles = []
     description = []
     url = []
+    publishedAt = []
+    content = []
     
     for ar in article:
         titles.append(ar["title"])
         description.append(ar["description"])
-        url.append(ar["url"])        
+        url.append(ar["url"])
+        publishedAt.append(ar["publishedAt"])
+        content.append(ar["content"])                
 
              # writing all trending news to csv        
     with open('articles.csv', 'a', newline='',encoding='utf-8-sig') as f:
         articlewriter = csv.writer(f, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(len(titles)):
-            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i] )
+            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i], publishedAt[i], content[i])
             articlewriter.writerow(s)
     f.close()
     
@@ -78,5 +82,5 @@ if __name__ == '__main__':
     # function call
     #News APi can only take 20 queries
     #querylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
-    querylisttemp = ["Marriott","tjx","Disney"]
+    querylisttemp = ["Amazon","Walmart", "Home Depot", "Comcast", "Disney", "Netflix"]
     NewsFromBBC(querylisttemp) 
