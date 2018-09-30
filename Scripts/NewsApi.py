@@ -11,7 +11,7 @@ import os
 #import API key (environment variable)
 newsapiKey = os.environ['NEWSAPI_KEY']
 
-def NewsFromBBC(querylist):
+def News(querylist, sources, fromdate, todate):
   
     completequery = ""
 
@@ -29,26 +29,28 @@ def NewsFromBBC(querylist):
     
         
     #Find the first page
-    main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=bloomberg,business-insider,cnbc,fortune,financial-times,financial-post,the-economist,\
-    the-wall-street-journal&pageSize=100&page=1&apiKey=" + newsapiKey  
-    #print(main_url)
+    main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=" + sources + "from=" + fromdate + "&to=" + todate + "&pageSize=100&page=1&apiKey=" + newsapiKey  
+
     
     # fetching data in json format
     open_bbc_page = requests.get(main_url).json() 
     totalResults = open_bbc_page["totalResults"]
-    #print(totalResults)
+    print(totalResults)
     
     #Write to CSV by page, until all articles in URL are written
     j = 1
+    articlesToCSV(main_url, j) #print to csv at page 1 first
+    totalResults = totalResults - 100 
+    print(totalResults)
+    
     while int(totalResults) > 0:
+        j = j + 1 #start printing to csv at page 2
+        main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=" + sources + "from=" + fromdate + "&to=" + todate + "&pageSize=100&page=" + str(j) + "&apiKey=" + newsapiKey  
         articlesToCSV(main_url, j)
-        j = j + 1
-        main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=bloomberg,business-insider,cnbc,fortune,financial-times,financial-post,the-economist,\
-        the-wall-street-journal&from=2018-07-01&to=2018-09-19&pageSize=100&page=" + str(j) + "&apiKey=" + newsapiKey  
-        totalResults = totalResults - 100 
-        #print(totalResults)
-        #print(j)
-            
+        totalResults = totalResults - 100
+        print(totalResults)
+  
+    
 def articlesToCSV(main_url, k):
     # getting all articles in a string article
     open_bbc_page = requests.get(main_url).json()  
@@ -81,6 +83,17 @@ def articlesToCSV(main_url, k):
 if __name__ == '__main__': 
     # function call
     #News APi can only take 20 queries
-    #querylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
-    querylisttemp = ["Amazon","Walmart", "Home Depot", "Comcast", "Disney", "Netflix"]
-    NewsFromBBC(querylisttemp) 
+    #oldquerylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
+    
+    #AgriCompaniesStocks = ["GPRE", "CF", "SMG", "TSN", "DF", "NTR", "MOS", "ADM", "FDP", "CVGW"]
+    AgriCompanies= ["Green Plains", "CF Industries", "Miracle-Gro", "Tyson Foods", "Dean Foods", "Nutrien", "Mosaic Company", "Archer-Daniels", "Del Monte", "Calavo Growers"]
+    SourcesPt1 = "abc-news,al-jazeera-english,associated-press,australian-financial-review,axios,bbc-news,bloomberg,business-insider,cbc-news,cbs-news,cnbc,cnn,financial-post,financial-times,fortune,fox-news,google-news,google-news-ca,independent,msnbc,national-greographic"
+    SourcesPt2 = "national-review, nbc-news,newsweek,new-york-magazine,politico,recode,reuters,new-scientist,techcrunch,the-globe-and-mail,the-economist,the-huffinton-post,the-new-york-times,the-wall-street-journal,the-washington-post,time,usa-today,wired"
+    BusinessSources = "bloomberg,cnbc,fortune,financial-times,financial-post,the-economist,the-wall-street-journal"
+    #business-insider
+    Pull_From = "2017-10-01"
+    Pull_To = "2018-09-30"
+    
+    RetailCompaniesStocks = ["GPS", "FL", "LB", "MAC", "KIM", "TJX", "CVS", "HD", "BBY", "LOW"]
+    RetailCompanies = ["Gap Inc", "Foot Locker", "L Brands", "Macerich", "Kimco", "TJX", "CVS", "Home Depot", "Best Buy", "Lowe's" ]
+    News(RetailCompanies, BusinessSources, Pull_From, Pull_To) 
