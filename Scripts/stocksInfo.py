@@ -17,7 +17,7 @@ import csv
 # creates list of symbols to iterate through
 #symbols = symbols.index.tolist()
 
-topCompanies = list(csv.DictReader(open('Consumer_Services_Top_25.csv')))
+topCompanies = list(csv.DictReader(open('stocks_info.csv')))
 
 symbols = []
 for company in topCompanies:
@@ -36,8 +36,8 @@ arbCompany = p.companyDF(arbSymbol)
 stock = pd.merge(arbChart,arbCompany,how='left',on=['symbol'])
 
 for symbol in symbols:
-    # get stock history for last 5 years
-    chart = p.chartDF(symbol, timeframe='5y')
+    # get stock history for last 1 month
+    chart = p.chartDF(symbol, timeframe='1m')
     # add stock symbol to df to act as a foreign key for company table
     chart['symbol']=symbol
     # get company info
@@ -46,4 +46,4 @@ for symbol in symbols:
     stock = stock.append(pd.merge(chart,company,how='left',on=['symbol']))
 
 #export data to csv
-stock.to_csv('sampleStocks3.csv', index=False, encoding='utf-8')
+stock.to_csv('test_stocks_sept.csv', index=False, encoding='utf-8')
