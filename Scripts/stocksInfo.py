@@ -17,12 +17,18 @@ import csv
 # creates list of symbols to iterate through
 #symbols = symbols.index.tolist()
 
-topCompanies = list(csv.DictReader(open('stocks_info.csv')))
+topCompanies = list(csv.DictReader(open('stocks_list.csv')))
 
-symbols = []
+companies = []
 for company in topCompanies:
-    symbols.append(company['Symbol'])
+    companies.append(company['name'])
 
+companies = {company:{} for company in companies}
+
+for company in topCompanies:
+    companies[company['name']]['symbol']=company['symbol']
+    companies[company['name']]['industry_id']=company['industry_id']
+    
 arbSymbol = 'AAPL'
 
 # arbitrarily create df object
@@ -30,20 +36,25 @@ arbSymbol = 'AAPL'
 arbChart = p.chartDF(arbSymbol, timeframe='1m')
 # add stock symbol to df to act as a foreign key for company table
 arbChart['symbol']="Arbitrary"
+arbChart['industry_id']=0
 # get company info
 arbCompany = p.companyDF(arbSymbol)
 # join the 2 tables and add to rest of stocks df
-stock = pd.merge(arbChart,arbCompany,how='left',on=['symbol'])
+stocks_df = pd.merge(arbChart,arbCompany,how='left',on=['symbol'])
 
-for symbol in symbols:
+for company in companies.values():
+    symbol = company['symbol']
+    industry_id = company['industry_id']
     # get stock history for last 1 month
-    chart = p.chartDF(symbol, timeframe='1m')
+    chart_df = p.chartDF(symbol, timeframe='1m')
     # add stock symbol to df to act as a foreign key for company table
-    chart['symbol']=symbol
+    chart_df['symbol']=symbol
+    # add our unique identifier for industry to the table
+    chart_df['industry_id']=industry_id
     # get company info
-    company = p.companyDF(symbol)
+    company_df = p.companyDF(symbol)
     # join the 2 tables and add to rest of stocks df
-    stock = stock.append(pd.merge(chart,company,how='left',on=['symbol']))
+    stocks_df = stocks_df.append(pd.merge(chart_df,company_df,how='left',on=['symbol']))
 
 #export data to csv
-stock.to_csv('test_stocks_sept.csv', index=False, encoding='utf-8')
+stocks_df.to_csv('test_stocks_sept.csv', index=False, encoding='utf-8')
