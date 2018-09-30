@@ -46,7 +46,7 @@ for company in companies.values():
     symbol = company['symbol']
     industry_id = company['industry_id']
     # get stock history for last 1 month
-    chart_df = p.chartDF(symbol, timeframe='1m')
+    chart_df = p.chartDF(symbol, timeframe='1y')
     # add stock symbol to df to act as a foreign key for company table
     chart_df['symbol']=symbol
     # add our unique identifier for industry to the table
