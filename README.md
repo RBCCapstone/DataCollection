@@ -1,12 +1,25 @@
-# DataCollection
-Scripts to access APIs 
+# DataCollection  
+-----------  
+Scripts
+>> Data  
+-----------  
 
-NewsApi.py - Pulls information using the NewsAPI and writes to articles.csv
+-----------
+Scripts  
+-----------  
+Scripts to pull and clean data including  
+ * calling APIs  
+ * creating feature-article matrix  
+ * crawlers (if any)  
 
-articles.csv - Stores the information pulled by NewsAPI
 
-stocksInfo.py - Pulls historical stock info for the last 5 years using pyEX library. Stocks are of the first 25 entries from S&P 500 Consumer Goods.
+-----------  
+>> Data 
+-----------  
+Lists of data including  
+ * Selected feature lists  
+ * News Sources  
+ * Stocks to watch  
+ * etc.  
 
-SampleStocks.csv - output of stocksInfo.py
 
-TextClassification.py - Selects features from articlestestingdata1.csv . Outputs most correlated unigrams and bigrams to defined classes
