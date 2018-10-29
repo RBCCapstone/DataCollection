@@ -86,17 +86,17 @@ if __name__ == '__main__':
     #oldquerylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
     
     #AgriCompaniesStocks = ["GPRE", "CF", "SMG", "TSN", "DF", "NTR", "MOS", "ADM", "FDP", "CVGW"]
-    AgriCompanies= ["Green Plains", "CF Industries", "Miracle-Gro", "Tyson Foods", "Dean Foods", "Nutrien", "Mosaic Company", "Archer-Daniels", "Del Monte", "Calavo Growers"]
+    AgriCompanies= ["(Green Plains)", "(CF Industries)", "(Miracle-Gro)", "(Miracle Gro)", "(Tyson Foods)", "(Dean Foods)", "Nutrien", "(Mosaic Company)", "(Archer-Daniels)","Archer Daniels", "(Del Monte)", "(Calavo Growers)"]
     SourcesPt1 = "abc-news,al-jazeera-english,associated-press,australian-financial-review,axios,bbc-news,bloomberg,business-insider,cbc-news,cbs-news,cnbc,cnn,financial-post,financial-times,fortune,fox-news,google-news,google-news-ca,independent,msnbc,national-greographic"
     SourcesPt2 = "national-review, nbc-news,newsweek,new-york-magazine,politico,recode,reuters,new-scientist,techcrunch,the-globe-and-mail,the-economist,the-huffinton-post,the-new-york-times,the-wall-street-journal,the-washington-post,time,usa-today,wired"
     BusinessSources = "bloomberg,cnbc,fortune,financial-times,financial-post,the-economist,the-wall-street-journal" #business-insider excluded. 
     
     #Define Dates to Gather Data
-    Pull_From = "2017-10-26"
-    Pull_To = "2018-10-24"
+    Pull_From = "2017-10-30"
+    Pull_To = "2018-10-28"
     
     #Define Companies to query on, if more than one word, include brackets
     RetailCompaniesStocks = ["GPS", "FL", "LB", "MAC", "KIM", "TJX", "CVS", "HD", "BBY", "LOW"]
     RetailCompanies1 = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)" ]
     RetailCompanies2 = ["Walmart", "Target", "Amazon", "Kroger", "Walgreens", "Target", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway"]
-    News(RetailCompanies2, BusinessSources, Pull_From, Pull_To) 
+    News(AgriCompanies, BusinessSources, Pull_From, Pull_To) 
