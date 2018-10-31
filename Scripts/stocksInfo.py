@@ -57,4 +57,4 @@ for company in companies.values():
     stocks_df = stocks_df.append(pd.merge(chart_df,company_df,how='left',on=['symbol']))
 
 #export data to csv
-stocks_df.to_csv('test_stocks_sept.csv', index=False, encoding='utf-8')
+stocks_df.to_csv('stocks_2018-10.csv', index=False, encoding='utf-8')
