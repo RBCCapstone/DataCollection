@@ -114,7 +114,7 @@ def sortarticles():
 
 
 # Driver Code
-def mainfunction(manual, Pullfrom, Pullto, CompanyList):
+def main(manual, Pullfrom, Pullto, CompanyList):
     # function call
     #News APi can only take 20 queries
     #oldquerylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]

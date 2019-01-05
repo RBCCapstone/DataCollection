@@ -38,8 +38,15 @@ def DataClean(filename):
     df['content']=list(content)
 
     # Output Cleaned Article Data
+    # rename index column 
+    df.rename(columns={'index': 'article_id'}, inplace=True)
     OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.csv")
     pd.DataFrame.to_csv(df, path_or_buf=OUTPUT_DIR)
+    
+    OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
+    writer = pd.ExcelWriter(OUTPUT_DIR)
+    df.to_excel(writer,'Sheet1')
+    writer.save()
 
 
 # In[21]:
