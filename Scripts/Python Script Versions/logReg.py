@@ -22,7 +22,7 @@ def runLogReg(filename):
     artID = X['article_id']
     X = X.drop(columns=['article_id', 'Unnamed: 0'])
 
-    print(X.head())
+    #print(X.head(20))
     classifier = pickle.load(open("ourClassifier.p", "rb"))
     
     y_predict = classifier.predict(X)
@@ -34,6 +34,32 @@ def runLogReg(filename):
     scores['article_id'] = artID.values
     scores['prediction'] = y_predict
     
+    #rename Columns
+    scores.columns = ['nonRel', 'Rel', 'article_id', 'prediction']
+    
+    #rank articles from most to least relevant
+    scores['difference'] = scores['Rel'] - scores['nonRel'] 
+    ScoreRanked = scores.sort_values(['difference'], ascending=[0])
+
+    #import cleaned articles
+    DATA_DIR = "Data"
+    ENCODING_DIR = os.path.join(DATA_DIR, 'cleanedArticles.xlsx')
+    Articles = pd.read_excel(ENCODING_DIR)
+    
+    
+    #Do a sql style join with the results and actual article data on 'article_id'   
+    Combined = ScoreRanked.merge(Articles, on='article_id', how='left')
+    print(Combined[['title', 'description']].head())
+    #Save as csv, tells you encoding type
     thispath = Path().absolute()
     OUTPUT_DIR = os.path.join(thispath, "Data", "results_"+filename)
-    pd.DataFrame.to_csv(scores, path_or_buf=OUTPUT_DIR)
+    pd.DataFrame.to_csv(Combined, path_or_buf=OUTPUT_DIR)
+    
+    #Save as excel file (better because weird characters encoded correctly)
+    OUTPUT_DIR = os.path.join(DATA_DIR, "results_encoding.xlsx")
+    writer = pd.ExcelWriter(OUTPUT_DIR)
+    Combined.to_excel(writer,'Sheet1')
+    writer.save()
+
+filename = "binEncoding.csv"
+runLogReg(filename)
