@@ -35,7 +35,7 @@ def News(querylist, sources, fromdate, todate):
             completequery += querylist[i]
      
     #Inform user on articles to print           
-    print("Gathering articles on"+ completequery+ " from: "+fromdate+" to "+todate)
+    print("Gathering articles on "+ completequery+ " from: "+fromdate+" to "+todate)
     
     #Find the first page
     main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=" + sources + "&from=" + fromdate + "&to=" + todate + "&pageSize=100&page=1&apiKey=" + newsapiKey  
@@ -142,15 +142,16 @@ def main(manual, Pullfrom, Pullto, CompanyList):
     #Define Companies to query on, if more than one word, include brackets
     RetailCompaniesStocks = ["GPS", "FL", "LB", "MAC", "KIM", "TJX", "CVS", "HD", "BBY", "LOW"]
     RetailCompanies1 = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)" ]
-    RetailCompanies2 = ["Walmart", "Target"]
-    RetailCompanies3 = ["Amazon", "Kroger"]
-    RetailCompanies4 = ["Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway"]
+    RetailCompanies2 = ["Walmart"]
+    RetailCompanies3 = ["Target"]
+    RetailCompanies4 = ["Amazon"]
+    RetailCompanies5 = ["Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway","Kroger"]
     RetailCompaniesAll = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)","Walmart", "Target","Amazon", "Kroger","Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway" ]
     
     
     
     #Run to collect articles that fit within your query (for Team use)
-    if CompanyList == 5:
+    if CompanyList == 6:
         News(RetailCompaniesAll, BusinessSources, Pull_From, Pull_To)
     elif CompanyList == 1:
         News(RetailCompanies1, BusinessSources, Pull_From, Pull_To)
@@ -158,8 +159,10 @@ def main(manual, Pullfrom, Pullto, CompanyList):
         News(RetailCompanies2, BusinessSources, Pull_From, Pull_To)
     elif CompanyList == 3:
         News(RetailCompanies3, BusinessSources, Pull_From, Pull_To)
-    else:
+    elif CompanyList == 4:
         News(RetailCompanies4, BusinessSources, Pull_From, Pull_To)
+    else:
+        News(RetailCompanies5, BusinessSources, Pull_From, Pull_To)
 
 
     #Function call below to sort the articles by date
