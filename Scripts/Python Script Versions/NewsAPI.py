@@ -143,10 +143,10 @@ def main(manual, Pullfrom, Pullto, CompanyList):
     RetailCompaniesStocks = ["GPS", "FL", "LB", "MAC", "KIM", "TJX", "CVS", "HD", "BBY", "LOW"]
     RetailCompanies1 = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)" ]
     RetailCompanies2 = ["Walmart"]
-    RetailCompanies3 = ["Target"]
+    RetailCompanies3 = ["(Target's)", "TGT"]
     RetailCompanies4 = ["Amazon"]
     RetailCompanies5 = ["Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway","Kroger"]
-    RetailCompaniesAll = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)","Walmart", "Target","Amazon", "Kroger","Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway" ]
+    RetailCompaniesAll = ["(Gap Inc)", "(Foot Locker)", "(L Brands)", "Macerich", "Kimco", "TJX", "CVS", "(Home Depot)", "(Best Buy)", "(Lowe's)","Walmart", "(Target's)", "TGT", "Amazon", "Kroger","Walgreens", "Kohl's", "(Dollar General)", "(Bed Bath and Beyond)", "Safeway" ]
     
     
     
