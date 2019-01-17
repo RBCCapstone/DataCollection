@@ -32,7 +32,8 @@ def DataClean(filename):
     #remove duplicates by content
     df = df.drop_duplicates(subset=['content'], keep='first')
 
-    #remove punctuation 
+    #remove punctuation, keep orig content
+    df['origContent'] = df['content']
     pattern = re.compile('[^0-9a-zA-Z ]+')
     content= map(lambda x: pattern.sub('', x), df['content'])
     df['content']=list(content)
