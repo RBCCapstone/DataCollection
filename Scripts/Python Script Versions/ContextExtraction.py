@@ -31,9 +31,13 @@ import nltk
 nltk.download('brown')
 from nltk.corpus import brown
 
+#Progress bar
+from tqdm import tqdm
+
+# train tagger with browns news corpus
 train = brown.tagged_sents(categories='news')
 
-# backoff regex tagging
+# custom regex tagging
 regex_tag = nltk.RegexpTagger([
      #(r'[$][0-9]+\s[MmBbTt]\S+','DV'), #dollar value 
      (r'^[-\:]?[0-9]+(.[0-9]+)?$', 'CD'),
@@ -108,7 +112,7 @@ def getWords(sentence):
         #"am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "just", "don", "now"
         ]
     words = word_tokenize(sentence)
-    words = ([word for word in words if word.lower() not in stopwords])
+    words = [word for word in words if word.lower() not in stopwords and len(word)>2]
     #print(words)
     return words
 
@@ -171,6 +175,8 @@ def re_tag(tagged):
     return new_tagged
 
 def unigramBreakdown(fullContext):
+    # extract all unigrams based on all words pulled from context extraction
+    # to be used as frequency count
     stopwords = ["myself", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "him", "his", "himself", "she", "her", "hers", "herself", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "are", "was", "were", "been", "being", "have", "has", "had", "having", "does", "did", "doing",  "the", "and", "but", "if", "or", "because", "until", "while", "for", "with", "about", "into", "through", "during", "before", "after", "from", "down", "out", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "nor", "not", "only", "own", "same", "than", "too", "very", "can", "will", "just", "don", "should", "now", "past", "year", "month", "day"]   
     
     # separates each word for each article => list of list
@@ -182,17 +188,77 @@ def unigramBreakdown(fullContext):
     translator = str.maketrans('', '', string.punctuation)
     unigrams = [term.lower().translate(translator) for term in articleUnigrams if term.lower() not in stopwords and len(term)>2]
     # count frequency of terms
-    unigrams = countWords(unigrams)
+    # unigrams = countWords(unigrams)
     
     return unigrams
-    
-def retrieveContext(filename):
-    articleDf = importData(filename)
 
+def bigramBreakdown(fullContext):
+    #extracts unigrams AND bigrams pulled by context extraction
+    bigrams = []
+    
+    # remove stop words and punctuation
+    translator = str.maketrans('', '', string.punctuation)
+    bigrams.extend([term.lower().translate(translator) for term in fullContext if len(term.split()) < 3])
+    
+    return bigrams
+
+def binaryEncode(article):
+    # create binary encoded article
+    
+def calculatePMI(terms, binEnc):
+    # use PMI to calculate top 3 terms that should be displayed for each article    
+    # the terms are stored as column names
+    LABEL = binEnc.columns[0]
+    total = binEnc[LABEL].count()
+    p_x = sum(binEnc[LABEL])/total
+    p_x_0 = 1-p_x
+
+    posresults = []
+    negresults = []
+
+    for term in tqdm(terms):
+        if term in binEnc.columns:
+            p_y = sum(binEnc[term])/total
+            p_xy = sum(binEnc[term][binEnc[LABEL]==1])/total
+            if p_xy == 0:
+                p_xy = 0.0001
+            pmi = math.log(p_xy/(p_y*p_x),2)
+            posresults.append([term, pmi])
+            
+            p_y_0 = 1-p_y
+            p_xy_0 = len(binEnc[(binEnc[LABEL]==0)&(binEnc[term]==0)])/total
+            if p_xy_0 == 0:
+                p_xy_0 = 0.0001
+            pmi = math.log(p_xy_0/(p_y_0*p_x_0),2)
+            negresults.append([term, pmi])
+            
+    posresults = pd.DataFrame(posresults)
+    posresults.columns= ['term', 'pos_pmi']
+    
+    negresults = pd.DataFrame(negresults)
+    negresults.columns= ['term', 'neg_pmi']
+
+    return posresults['term'].sort_values(by='pos_pmi', ascending=False).head(10) #, negresults
+
+def retrieveContext(filename):
+    # import relevant articles
+    articleDf = importData(filename)
+    # import binary encoded articles to use for identifying most relevant
+    # need to redo the binary encoding for articles labelled as market moving from from lr
+    
     for i in articleDf.index:
+        # get context for articles
         keyterms = get_info(articleDf['content'].iloc[i])
         articleDf.at[i, 'context'] = ', '.join(keyterms)
-        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))   
+        
+        # separate keyterms pulled from context extraction to get unigrams
+        # this will be used to identify trending words
+        unigramTemp = unigramBreakdown(keyterms)
+        articleDf.at[i, 'unigrams'] = ', '.join(unigramTemp)
+        
+        # create list of bigrams and unigrams captured by context extraction
+        bigramTemp = bigramBreakdown(keyterms)
+        articleDf.at[i, 'bigrams'] = ', '.join(bigramTemp)
     
     #Save as excel file (better because weird characters encoded correctly)
     DATA_DIR = "Data"
