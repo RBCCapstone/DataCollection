@@ -202,8 +202,21 @@ def bigramBreakdown(fullContext):
     
     return bigrams
 
-def binaryEncode(article):
-    # create binary encoded article
+def binaryEncode(keywords, articles):
+    # keywords = list of words
+    # article = df with columns: label (market moving or not) and list of words in each article
+    # for each article and each keyword: give 1 if keyword in article and 0 if not
+    encodedArts = []
+    for article in articles:
+        keywordInArt = [1 if keyword in article else 0 for keyword in keywords]
+        encodedArts.append(keywordInArt)
+    
+    # set up 
+    binEncDf = pd.dataframe(encodedArts)
+    # using keywords as columns
+    binEncDf.columns = keywords
+    
+    return binEncDf
     
 def calculatePMI(terms, binEnc):
     # use PMI to calculate top 3 terms that should be displayed for each article    
@@ -243,9 +256,8 @@ def calculatePMI(terms, binEnc):
 def retrieveContext(filename):
     # import relevant articles
     articleDf = importData(filename)
-    # import binary encoded articles to use for identifying most relevant
-    # need to redo the binary encoding for articles labelled as market moving from from lr
     
+    bigrams = []
     for i in articleDf.index:
         # get context for articles
         keyterms = get_info(articleDf['content'].iloc[i])
@@ -259,6 +271,8 @@ def retrieveContext(filename):
         # create list of bigrams and unigrams captured by context extraction
         bigramTemp = bigramBreakdown(keyterms)
         articleDf.at[i, 'bigrams'] = ', '.join(bigramTemp)
+        bigrams.extend(bigramTemp)
+    
     
     #Save as excel file (better because weird characters encoded correctly)
     DATA_DIR = "Data"
