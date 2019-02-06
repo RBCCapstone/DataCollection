@@ -31,51 +31,10 @@ import nltk
 nltk.download('brown')
 from nltk.corpus import brown
 
-train = brown.tagged_sents(categories='news')
+#Progress bar
+from tqdm import tqdm
 
-# backoff regex tagging
-regex_tag = nltk.RegexpTagger([
-     #(r'[$][0-9]+\s[MmBbTt]\S+','DV'), #dollar value 
-     (r'^[-\:]?[0-9]+(.[0-9]+)?$', 'CD'),
-     (r'.*able$', 'JJ'),
-     (r'^[A-Z].*$', 'NNP'),
-     (r'.*ly$', 'RB'),
-     (r'.*s$', 'NNS'),
-     (r'.*ing$', 'VBG'),
-     (r'.*ed$', 'VBD'),
-     (r'.[\/\/]\S+', 'URL'), #URL / useless
-     (r'.*', 'NN')
-])
-
-unigram_tag = nltk.UnigramTagger(train, backoff=regex_tag)
-bigram_tag = nltk.BigramTagger(train, backoff=unigram_tag)
-trigram_tag = nltk.TrigramTagger(train, backoff=bigram_tag)
-
-# custom defined Context Free Grammar (CFG) by vipul
-cfg = dict()
-cfg['NNP+NNP'] = 'NNP'
-cfg['NN+NN'] = 'NNI'
-cfg['NNP+NNI'] = 'NNI'
-cfg['NNI+NN'] = 'NNI'
-cfg['NNI+NNI'] = 'NNI'
-cfg['NNI+NNP'] = 'NNI'
-cfg['JJ+JJ'] = 'JJ'
-cfg['JJ+NN'] = 'NNI'
-cfg['CD+CD'] = 'CD'
-cfg['NPI+NNP'] = 'NNP' # this is specific for collecting terms with the word deal
-cfg['NNI+RP'] = 'NNI' # collects terms like "heats up"
-cfg['RB+NN'] = 'NNP'# combination for monetary movement e.g. quarterly[RB] profit[NN] fell [VBD]
-cfg['NNP+VBD'] = 'VPI' #VBP = a verb phrase
-cfg['MD+VB'] = 'VPI' # collects terms like "will lose" (verb phrase incomplete)
-cfg['MD+NN'] = 'VPI' # collects terms like "will soar" (verb phrase incomplete)
-cfg['VPI+NN'] = 'VP' # collects terms like "will lose ground"
-cfg['NNI+VP'] = 'VP' # collects terms like "index will soar"
-cfg['NN+VPI'] = 'VP' # collects terms like "index will soar"
-cfg['NNP+VPI'] = 'VP' # collects terms like "index will soar"
-cfg['VPI+TO'] = 'VPI' # collect past participle verbs with to e.g. pledged to
-cfg['VBN+TO'] = 'VBN' # collect past participle verbs with to e.g. pledged to
-cfg['VBN+NN'] = 'VP' # collects terms like "pledged to adapt"
-
+# Import articles
 def importData(filename):
     """
     Import data into df
@@ -93,6 +52,55 @@ def importData(filename):
         pass
     return df
 
+# PoS Tagger and CFG Definitions
+# train tagger with browns news corpus
+train = brown.tagged_sents(categories='news')
+
+# custom regex tagging
+regex_tag = nltk.RegexpTagger([
+     #(r'[$][0-9]+\s[MmBbTt]\S+','DV'), #dollar value 
+     (r'^[-\:]?[0-9]+(.[0-9]+)?$', 'CD'),
+     (r'.*able$', 'JJ'),
+     (r'^[A-Z].*$', 'NNP'),
+     (r'.*ly$', 'RB'),
+     (r'.*s$', 'NNS'),
+     (r'.*ing$', 'VBG'),
+     (r'.*ed$', 'VBD'),
+     (r'.[\/\/]\S+', 'URL'), #URL / useless
+     (r'.*', 'NN')
+])
+
+unigram_tag = nltk.UnigramTagger(train, backoff=regex_tag)
+bigram_tag = nltk.BigramTagger(train, backoff=unigram_tag)
+trigram_tag = nltk.TrigramTagger(train, backoff=bigram_tag)
+
+# PoS Browns Corpus Tagging: https://en.wikipedia.org/wiki/Brown_Corpus
+# custom defined Context Free Grammar (CFG) by vipul
+cfg = dict()
+cfg['NNP+NNP'] = 'NNP'
+cfg['NN+NN'] = 'NNI'
+cfg['NNP+NNI'] = 'NNI'
+cfg['NNI+NN'] = 'NNI'
+cfg['NNI+NNI'] = 'NNI'
+cfg['NNI+NNP'] = 'NNI'
+cfg['JJ+JJ'] = 'JJ'
+cfg['JJ+NN'] = 'NNI'
+cfg['CD+CD'] = 'CD'
+cfg['NPI+NNP'] = 'NNP' # this is specific for collecting terms with the word deal
+cfg['NNI+RP'] = 'NNI' # collects terms like "heats up" -- RP = adverb particle
+cfg['RB+NN'] = 'NNP'# combination for monetary movement e.g. quarterly[RB] profit[NN] fell [VBD] -- RB = adverb
+cfg['NNP+VBD'] = 'VPI' #VBP = a verb phrase
+cfg['MD+VB'] = 'VPI' # collects terms like "will lose" (verb phrase incomplete)
+cfg['MD+NN'] = 'VPI' # collects terms like "will soar" (verb phrase incomplete)
+cfg['VPI+NN'] = 'VP' # collects terms like "will lose ground"
+cfg['NNI+VP'] = 'VP' # collects terms like "index will soar"
+cfg['NN+VPI'] = 'VP' # collects terms like "index will soar"
+cfg['NNP+VPI'] = 'VP' # collects terms like "index will soar"
+cfg['VPI+TO'] = 'VPI' # collect past participle verbs with to e.g. pledged to
+cfg['VBN+TO'] = 'VBN' # collect past participle verbs with to e.g. pledged to
+cfg['VBN+NN'] = 'VP' # collects terms like "pledged to adapt"
+
+# Utility functions for context extraction
 def getWords(sentence):
     stopwords = [
         # months
@@ -108,7 +116,7 @@ def getWords(sentence):
         #"am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "just", "don", "now"
         ]
     words = word_tokenize(sentence)
-    words = ([word for word in words if word.lower() not in stopwords])
+    words = [word for word in words if word.lower() not in stopwords and len(word)>2]
     #print(words)
     return words
 
@@ -170,7 +178,9 @@ def re_tag(tagged):
             new_tagged.append((tag[0], tag[1]))
     return new_tagged
 
+# extract all unigrams based on all words pulled from context extraction
 def unigramBreakdown(fullContext):
+    # to be used as frequency count
     stopwords = ["myself", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "him", "his", "himself", "she", "her", "hers", "herself", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "are", "was", "were", "been", "being", "have", "has", "had", "having", "does", "did", "doing",  "the", "and", "but", "if", "or", "because", "until", "while", "for", "with", "about", "into", "through", "during", "before", "after", "from", "down", "out", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "nor", "not", "only", "own", "same", "than", "too", "very", "can", "will", "just", "don", "should", "now", "past", "year", "month", "day"]   
     
     # separates each word for each article => list of list
@@ -182,23 +192,111 @@ def unigramBreakdown(fullContext):
     translator = str.maketrans('', '', string.punctuation)
     unigrams = [term.lower().translate(translator) for term in articleUnigrams if term.lower() not in stopwords and len(term)>2]
     # count frequency of terms
-    unigrams = countWords(unigrams)
+    # unigrams = countWords(unigrams)
     
     return unigrams
-    
-def retrieveContext(filename):
-    articleDf = importData(filename)
 
+#extracts unigrams AND bigrams pulled by context extraction
+def bigramBreakdown(fullContext):
+    bigrams = []
+    
+    # remove stop words and punctuation
+    translator = str.maketrans('', '', string.punctuation)
+    bigrams.extend([term.lower().translate(translator) for term in fullContext if len(term.split()) < 3])
+    
+    return bigrams
+
+# Retrieve context
+def retrieveContext(filename):
+    # import relevant articles
+    articleDf = importData(filename)
+    
     for i in articleDf.index:
+        # get context for articles
         keyterms = get_info(articleDf['content'].iloc[i])
         articleDf.at[i, 'context'] = ', '.join(keyterms)
-        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))   
+        
+        # separate keyterms pulled from context extraction to get unigrams
+        # this will be used to identify trending words
+        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))
+        
+        # create list of bigrams and unigrams captured by context extraction
+        articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
     
     #Save as excel file (better because weird characters encoded correctly)
+
     DATA_DIR = "Data"
     OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
     writer = pd.ExcelWriter(OUTPUT_DIR)
     articleDf.to_excel(writer,'Sheet1')
     writer.save()
-    
+
     return articleDf
+
+# PMI For Tag Ranking
+# return binary representation of article in terms of all keyphrases pulled
+def dfTransform(df, term_column):
+    # df is the article df ; term_col is name of column containing keyterms -- can be unigrams, bigrams, named entities, etc.
+    keyterms = []
+    for article in df[term_column].values:
+        keyterms.extend([word.lstrip() for word in (article.split(','))])
+    keyterms = set(keyterms) # deduplicate terms by casting as set
+    
+    # for each article and each keyword: give 1 if keyword in article and 0 if not
+    encodedArticle = []
+    for i in df.index:
+        articleTerms = ([word.lstrip() for word in (df[term_column].iloc[i].split(','))])
+        encodedArticle.append([1 if word in articleTerms else 0 for word in keyterms])
+    
+    # set up dataframe
+    binEncDf = pd.DataFrame(encodedArticle)
+    # use keywords as columns
+    binEncDf.columns = keyterms
+    # keep article_id and prediction from original table
+    df = df.rename(columns={'prediction': 'mktMoving'}) # changed it from prediction because that was also a keyterm
+    binEncDf = df[['article_id','mktMoving']].join(binEncDf)
+    
+    return binEncDf
+
+# Simple example of getting pairwise mutual information of a term
+def pmiCal(df, x, label_column='mktMoving'):
+    pmilist=[]
+    for i in [0,1]:
+        for j in [0,1]:
+            px = sum(df[label_column]==i)/len(df)
+            py = sum(df[x]==j)/len(df)
+            pxy = len(df[(df[label_column]==i) & (df[x]==j)])/len(df)
+            if pxy==0:#Log 0 cannot happen
+                pmi = math.log((pxy+0.0001)/(px*py+0.0001))
+            else:
+                pmi = math.log(pxy/(px*py+0.0001))
+            pmilist.append([i]+[j]+[px]+[py]+[pxy]+[pmi])
+    pmiDf = pd.DataFrame(pmilist)
+    pmiDf.columns = ['x','y','px','py','pxy','pmi']
+    return pmiDf
+
+def pmiIndivCal(df,x,gt, label_column='mktMoving'):
+    px = sum(df[label_column]==gt)/len(df)
+    py = sum(df[x]==1)/len(df)
+    pxy = len(df[(df[label_column]==gt) & (df[x]==1)])/len(df)
+    if pxy==0:#Log 0 cannot happen
+        pmi = math.log((pxy+0.0001)/(px*py+0.0001))
+    else:
+        pmi = math.log(pxy/(px*py))
+    return pmi
+
+# Compute PMI for all terms and all possible labels
+def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mktMoving'): 
+    # calculate all the pmi for top k and store them into one pmidf dataframe
+    for i in tqdm(artDf.index): # for all articles
+        terms = set(([word.lstrip() for word in (artDf[term_column].iloc[i].split(','))]))
+        pmiposlist = []
+        for word in terms: # for each term in the article
+            # calculate PMI
+            pmiposlist.append([word]+[pmiIndivCal(binaryEncDf,word,1,label_column)])
+        
+        pmiposlist = pd.DataFrame(pmiposlist)
+        pmiposlist.columns = ['word','pmi']
+        # append top 10 to article df
+        artDf.at[i,'tags_top10'] = (',').join(word for word in pmiposlist.sort_values(by='pmi', ascending=False).head(10)['word'])    
+    return artDf
