@@ -206,33 +206,6 @@ def bigramBreakdown(fullContext):
     
     return bigrams
 
-# Retrieve context
-def retrieveContext(filename):
-    # import relevant articles
-    articleDf = importData(filename)
-    
-    for i in articleDf.index:
-        # get context for articles
-        keyterms = get_info(articleDf['content'].iloc[i])
-        articleDf.at[i, 'context'] = ', '.join(keyterms)
-        
-        # separate keyterms pulled from context extraction to get unigrams
-        # this will be used to identify trending words
-        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))
-        
-        # create list of bigrams and unigrams captured by context extraction
-        articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
-    
-    #Save as excel file (better because weird characters encoded correctly)
-
-    DATA_DIR = "Data"
-    OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
-    writer = pd.ExcelWriter(OUTPUT_DIR)
-    articleDf.to_excel(writer,'Sheet1')
-    writer.save()
-
-    return articleDf
-
 # PMI For Tag Ranking
 # return binary representation of article in terms of all keyphrases pulled
 def dfTransform(df, term_column):
@@ -244,7 +217,7 @@ def dfTransform(df, term_column):
     
     # for each article and each keyword: give 1 if keyword in article and 0 if not
     encodedArticle = []
-    for i in df.index:
+    for i in tqdm(df.index):
         articleTerms = ([word.lstrip() for word in (df[term_column].iloc[i].split(','))])
         encodedArticle.append([1 if word in articleTerms else 0 for word in keyterms])
     
@@ -291,12 +264,55 @@ def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mktMoving'):
     for i in tqdm(artDf.index): # for all articles
         terms = set(([word.lstrip() for word in (artDf[term_column].iloc[i].split(','))]))
         pmiposlist = []
-        for word in terms: # for each term in the article
-            # calculate PMI
+        pmineglist = []
+
+        for word in terms:
+            #pmilist.append([word]+[pmiCal(df,word)])
             pmiposlist.append([word]+[pmiIndivCal(binaryEncDf,word,1,label_column)])
+            pmineglist.append([word]+[pmiIndivCal(binaryEncDf,word,0,label_column)])
         
+        #pmiDf = pd.DataFrame(pmilist)
         pmiposlist = pd.DataFrame(pmiposlist)
+        pmineglist = pd.DataFrame(pmineglist)
         pmiposlist.columns = ['word','pmi']
-        # append top 10 to article df
-        artDf.at[i,'tags_top10'] = (',').join(word for word in pmiposlist.sort_values(by='pmi', ascending=False).head(10)['word'])    
+        pmineglist.columns = ['word','pmi']
+        artDf.at[i,'tags_posTop_10'] = (',').join(word for word in pmiposlist.sort_values(by='pmi', ascending=False).head(10)['word'])
+        artDf.at[i,'tags_negBot_10'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(10)['word'])   
     return artDf
+
+# Functions to run extraction and rank tags
+
+# Tag ranking using PMI
+def calculatePMI(artDf, termType):
+    # use PMI to calculate top 10 terms that should be displayed for each article    
+    # get binary encoding of articles represented as uni- and bigrams
+    binaryEncDf = dfTransform(artDf, termType)
+    articleDf_ranked = pmiForAllCal(artDf, binaryEncDf, termType)
+    return articleDf_ranked
+
+# Retrieve context
+def retrieveContext(filename, termType='bigrams'):
+    # import relevant articles
+    articleDf = importData(filename)
+    
+    for i in articleDf.index:
+        # get context for articles
+        keyterms = get_info(articleDf['content'].iloc[i])
+        articleDf.at[i, 'context'] = ', '.join(keyterms)    
+        # separate keyterms pulled from context extraction to get unigrams
+        # this will be used to identify trending words
+        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))       
+        # create list of bigrams and unigrams captured by context extraction
+        articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
+    
+    # returns article Df with new column for top tags
+    articleDf = calculatePMI(articleDf, termType)
+    
+    #Save as excel file (better because weird characters encoded correctly)
+    DATA_DIR = "Data"
+    OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
+    writer = pd.ExcelWriter(OUTPUT_DIR)
+    articleDf.to_excel(writer,'Sheet1')
+    writer.save()
+
+    return articleDf
