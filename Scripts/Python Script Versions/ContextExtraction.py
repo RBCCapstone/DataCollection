@@ -34,6 +34,25 @@ from nltk.corpus import brown
 #Progress bar
 from tqdm import tqdm
 
+# Import articles
+def importData(filename):
+    """
+    Import data into df
+    """
+    #Import Labelled Data
+    DATA_DIR = "Data"
+    thispath = Path().absolute()
+    ARTICLES = os.path.join(DATA_DIR, filename)
+    
+    df = pd.read_excel(ARTICLES)
+
+    try:
+        df.head()
+    except:
+        pass
+    return df
+
+# PoS Tagger and CFG Definitions
 # train tagger with browns news corpus
 train = brown.tagged_sents(categories='news')
 
@@ -55,6 +74,7 @@ unigram_tag = nltk.UnigramTagger(train, backoff=regex_tag)
 bigram_tag = nltk.BigramTagger(train, backoff=unigram_tag)
 trigram_tag = nltk.TrigramTagger(train, backoff=bigram_tag)
 
+# PoS Browns Corpus Tagging: https://en.wikipedia.org/wiki/Brown_Corpus
 # custom defined Context Free Grammar (CFG) by vipul
 cfg = dict()
 cfg['NNP+NNP'] = 'NNP'
@@ -67,8 +87,8 @@ cfg['JJ+JJ'] = 'JJ'
 cfg['JJ+NN'] = 'NNI'
 cfg['CD+CD'] = 'CD'
 cfg['NPI+NNP'] = 'NNP' # this is specific for collecting terms with the word deal
-cfg['NNI+RP'] = 'NNI' # collects terms like "heats up"
-cfg['RB+NN'] = 'NNP'# combination for monetary movement e.g. quarterly[RB] profit[NN] fell [VBD]
+cfg['NNI+RP'] = 'NNI' # collects terms like "heats up" -- RP = adverb particle
+cfg['RB+NN'] = 'NNP'# combination for monetary movement e.g. quarterly[RB] profit[NN] fell [VBD] -- RB = adverb
 cfg['NNP+VBD'] = 'VPI' #VBP = a verb phrase
 cfg['MD+VB'] = 'VPI' # collects terms like "will lose" (verb phrase incomplete)
 cfg['MD+NN'] = 'VPI' # collects terms like "will soar" (verb phrase incomplete)
@@ -80,23 +100,7 @@ cfg['VPI+TO'] = 'VPI' # collect past participle verbs with to e.g. pledged to
 cfg['VBN+TO'] = 'VBN' # collect past participle verbs with to e.g. pledged to
 cfg['VBN+NN'] = 'VP' # collects terms like "pledged to adapt"
 
-def importData(filename):
-    """
-    Import data into df
-    """
-    #Import Labelled Data
-    DATA_DIR = "Data"
-    thispath = Path().absolute()
-    ARTICLES = os.path.join(DATA_DIR, filename)
-    
-    df = pd.read_excel(ARTICLES)
-
-    try:
-        df.head()
-    except:
-        pass
-    return df
-
+# Utility functions for context extraction
 def getWords(sentence):
     stopwords = [
         # months
@@ -174,8 +178,8 @@ def re_tag(tagged):
             new_tagged.append((tag[0], tag[1]))
     return new_tagged
 
+# extract all unigrams based on all words pulled from context extraction
 def unigramBreakdown(fullContext):
-    # extract all unigrams based on all words pulled from context extraction
     # to be used as frequency count
     stopwords = ["myself", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "him", "his", "himself", "she", "her", "hers", "herself", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "are", "was", "were", "been", "being", "have", "has", "had", "having", "does", "did", "doing",  "the", "and", "but", "if", "or", "because", "until", "while", "for", "with", "about", "into", "through", "during", "before", "after", "from", "down", "out", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "nor", "not", "only", "own", "same", "than", "too", "very", "can", "will", "just", "don", "should", "now", "past", "year", "month", "day"]   
     
@@ -192,8 +196,8 @@ def unigramBreakdown(fullContext):
     
     return unigrams
 
+#extracts unigrams AND bigrams pulled by context extraction
 def bigramBreakdown(fullContext):
-    #extracts unigrams AND bigrams pulled by context extraction
     bigrams = []
     
     # remove stop words and punctuation
@@ -202,62 +206,11 @@ def bigramBreakdown(fullContext):
     
     return bigrams
 
-def binaryEncode(keywords, articles):
-    # keywords = list of words
-    # article = df with columns: label (market moving or not) and list of words in each article
-    # for each article and each keyword: give 1 if keyword in article and 0 if not
-    encodedArts = []
-    for article in articles:
-        keywordInArt = [1 if keyword in article else 0 for keyword in keywords]
-        encodedArts.append(keywordInArt)
-    
-    # set up 
-    binEncDf = pd.dataframe(encodedArts)
-    # using keywords as columns
-    binEncDf.columns = keywords
-    
-    return binEncDf
-    
-def calculatePMI(terms, binEnc):
-    # use PMI to calculate top 3 terms that should be displayed for each article    
-    # the terms are stored as column names
-    LABEL = binEnc.columns[0]
-    total = binEnc[LABEL].count()
-    p_x = sum(binEnc[LABEL])/total
-    p_x_0 = 1-p_x
-
-    posresults = []
-    negresults = []
-
-    for term in tqdm(terms):
-        if term in binEnc.columns:
-            p_y = sum(binEnc[term])/total
-            p_xy = sum(binEnc[term][binEnc[LABEL]==1])/total
-            if p_xy == 0:
-                p_xy = 0.0001
-            pmi = math.log(p_xy/(p_y*p_x),2)
-            posresults.append([term, pmi])
-            
-            p_y_0 = 1-p_y
-            p_xy_0 = len(binEnc[(binEnc[LABEL]==0)&(binEnc[term]==0)])/total
-            if p_xy_0 == 0:
-                p_xy_0 = 0.0001
-            pmi = math.log(p_xy_0/(p_y_0*p_x_0),2)
-            negresults.append([term, pmi])
-            
-    posresults = pd.DataFrame(posresults)
-    posresults.columns= ['term', 'pos_pmi']
-    
-    negresults = pd.DataFrame(negresults)
-    negresults.columns= ['term', 'neg_pmi']
-
-    return posresults['term'].sort_values(by='pos_pmi', ascending=False).head(10) #, negresults
-
+# Retrieve context
 def retrieveContext(filename):
     # import relevant articles
     articleDf = importData(filename)
     
-    bigrams = []
     for i in articleDf.index:
         # get context for articles
         keyterms = get_info(articleDf['content'].iloc[i])
@@ -265,20 +218,85 @@ def retrieveContext(filename):
         
         # separate keyterms pulled from context extraction to get unigrams
         # this will be used to identify trending words
-        unigramTemp = unigramBreakdown(keyterms)
-        articleDf.at[i, 'unigrams'] = ', '.join(unigramTemp)
+        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))
         
         # create list of bigrams and unigrams captured by context extraction
-        bigramTemp = bigramBreakdown(keyterms)
-        articleDf.at[i, 'bigrams'] = ', '.join(bigramTemp)
-        bigrams.extend(bigramTemp)
-    
+        articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
     
     #Save as excel file (better because weird characters encoded correctly)
+
     DATA_DIR = "Data"
     OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
     writer = pd.ExcelWriter(OUTPUT_DIR)
     articleDf.to_excel(writer,'Sheet1')
     writer.save()
-    
+
     return articleDf
+
+# PMI For Tag Ranking
+# return binary representation of article in terms of all keyphrases pulled
+def dfTransform(df, term_column):
+    # df is the article df ; term_col is name of column containing keyterms -- can be unigrams, bigrams, named entities, etc.
+    keyterms = []
+    for article in df[term_column].values:
+        keyterms.extend([word.lstrip() for word in (article.split(','))])
+    keyterms = set(keyterms) # deduplicate terms by casting as set
+    
+    # for each article and each keyword: give 1 if keyword in article and 0 if not
+    encodedArticle = []
+    for i in df.index:
+        articleTerms = ([word.lstrip() for word in (df[term_column].iloc[i].split(','))])
+        encodedArticle.append([1 if word in articleTerms else 0 for word in keyterms])
+    
+    # set up dataframe
+    binEncDf = pd.DataFrame(encodedArticle)
+    # use keywords as columns
+    binEncDf.columns = keyterms
+    # keep article_id and prediction from original table
+    df = df.rename(columns={'prediction': 'mktMoving'}) # changed it from prediction because that was also a keyterm
+    binEncDf = df[['article_id','mktMoving']].join(binEncDf)
+    
+    return binEncDf
+
+# Simple example of getting pairwise mutual information of a term
+def pmiCal(df, x, label_column='mktMoving'):
+    pmilist=[]
+    for i in [0,1]:
+        for j in [0,1]:
+            px = sum(df[label_column]==i)/len(df)
+            py = sum(df[x]==j)/len(df)
+            pxy = len(df[(df[label_column]==i) & (df[x]==j)])/len(df)
+            if pxy==0:#Log 0 cannot happen
+                pmi = math.log((pxy+0.0001)/(px*py+0.0001))
+            else:
+                pmi = math.log(pxy/(px*py+0.0001))
+            pmilist.append([i]+[j]+[px]+[py]+[pxy]+[pmi])
+    pmiDf = pd.DataFrame(pmilist)
+    pmiDf.columns = ['x','y','px','py','pxy','pmi']
+    return pmiDf
+
+def pmiIndivCal(df,x,gt, label_column='mktMoving'):
+    px = sum(df[label_column]==gt)/len(df)
+    py = sum(df[x]==1)/len(df)
+    pxy = len(df[(df[label_column]==gt) & (df[x]==1)])/len(df)
+    if pxy==0:#Log 0 cannot happen
+        pmi = math.log((pxy+0.0001)/(px*py+0.0001))
+    else:
+        pmi = math.log(pxy/(px*py))
+    return pmi
+
+# Compute PMI for all terms and all possible labels
+def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mktMoving'): 
+    # calculate all the pmi for top k and store them into one pmidf dataframe
+    for i in tqdm(artDf.index): # for all articles
+        terms = set(([word.lstrip() for word in (artDf[term_column].iloc[i].split(','))]))
+        pmiposlist = []
+        for word in terms: # for each term in the article
+            # calculate PMI
+            pmiposlist.append([word]+[pmiIndivCal(binaryEncDf,word,1,label_column)])
+        
+        pmiposlist = pd.DataFrame(pmiposlist)
+        pmiposlist.columns = ['word','pmi']
+        # append top 10 to article df
+        artDf.at[i,'tags_top10'] = (',').join(word for word in pmiposlist.sort_values(by='pmi', ascending=False).head(10)['word'])    
+    return artDf
