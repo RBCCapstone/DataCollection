@@ -1,0 +1,5 @@
+1. New Data - Update the Labelled Articles files under Scripts--> Data
+2. Feature Selection
+3. Binary Enconding
+4. Append Y #todo: just integrate this into encoding script
+5. Logistic Regression -> actually train classifier
