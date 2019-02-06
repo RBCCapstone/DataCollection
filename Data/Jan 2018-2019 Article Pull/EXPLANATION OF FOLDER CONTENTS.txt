@@ -1,0 +1,11 @@
+Full Article Pull - Jan 2018-2019 :
+This is the full article pull of XX articles - with all of our classifications compiled
+As we go back and build our database of ranked files for the ML algorithm, grab a section from this sheet and update.
+
+~name~.....xlsx
+This is ~name's~ most recent working file. Once completed and added into the the Full Article Pull spreadsheet, delete or overwrite, but let's avoid having multiple files for each person* since it'd be redundant.
+*could archive if ya want
+
+Labelled Articles :
+To be copied to data folder within scripts
+only the articles that have been labelled by us.
