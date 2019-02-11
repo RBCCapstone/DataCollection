@@ -288,7 +288,15 @@ def calculatePMI(artDf, termType):
     # get binary encoding of articles represented as uni- and bigrams
     binaryEncDf = dfTransform(artDf, termType)
     articleDf_ranked = pmiForAllCal(artDf, binaryEncDf, termType)
-    return articleDf_ranked
+    return articleDf_ranked, binaryEncDf
+
+# find most popular keyterms mentioned in news
+def frequencyCounter(binEncDf):
+    # sum each column of binary encoded articles
+    # output should be a dataframe with: word | 3 of articles mentioning word
+    freqDf = binEncDf.drop('article_id', axis=1).sum(axis=0, skipna=True).sort_values(ascending=False).to_frame().reset_index()
+    freqDf.columns = ['word','freq_articles']
+    return freqDf
 
 # Retrieve context
 def retrieveContext(filename, termType='bigrams'):
@@ -306,13 +314,23 @@ def retrieveContext(filename, termType='bigrams'):
         articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
     
     # returns article Df with new column for top tags
-    articleDf = calculatePMI(articleDf, termType)
+    articleDf, binaryEncDf = calculatePMI(articleDf, termType)
+    
+    # returns most popular terms mentioned across all articles
+    trendingTermsDf = frequencyCounter(binaryEncDf)
     
     #Save as excel file (better because weird characters encoded correctly)
     DATA_DIR = "Data"
     OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
     writer = pd.ExcelWriter(OUTPUT_DIR)
     articleDf.to_excel(writer,'Sheet1')
+    writer.save()
+    
+    #Save as excel file (better because weird characters encoded correctly)
+    DATA_DIR = "Data"
+    OUTPUT_DIR = os.path.join(DATA_DIR, "trending_terms.xlsx")
+    writer = pd.ExcelWriter(OUTPUT_DIR)
+    trendingTermsDf.to_excel(writer,'Sheet1')
     writer.save()
 
     return articleDf
