@@ -70,11 +70,13 @@ def articlesToCSV(main_url, k):
     url = []
     publishedAt = []
     content = []
+    source = []
     
     for ar in article:
         titles.append(ar["title"])
         description.append(ar["description"])
         url.append(ar["url"])
+        source.append(ar["source"])
         publishedAt.append(ar["publishedAt"])
         content.append(ar["content"])                
 
@@ -82,7 +84,7 @@ def articlesToCSV(main_url, k):
     with open('articles.csv', 'a', newline='',encoding='utf-8-sig') as f:
         articlewriter = csv.writer(f, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for i in range(len(titles)):
-            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i], publishedAt[i], content[i])
+            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i], source[i], publishedAt[i], content[i])
             articlewriter.writerow(s)
     f.close()
 
@@ -95,7 +97,7 @@ def sortarticles():
     path = 'Data'
     
     articles = pd.read_csv("articles.csv", header= None)
-    articles.columns = ["index", "title", "description", "url", "date", "content"]
+    articles.columns = ["index", "title", "description", "url", "source", "date", "content"]
     articles.head()
     
     # convert column to datetype
@@ -118,11 +120,12 @@ def sortarticles():
 # Driver Code
 def main(manual, Pullfrom, Pullto, CompanyList):
     # function call
-    #News APi can only take 20 queries
+    
+    #News APi can only take 20 queries, different querying alternatives are be
     #oldquerylist = ["Amazon", "Walmart", "Home Depot", "Comcast", "Disney", "Netflix", "McDonald's", "Costco", "Lowe's", "Twenty-First Century", "Century Fox", "Starbucks", "Charter Communications", "TJX", "American Tower", "Simon Property", "Las Vegas Sands", "Crown Castle", "Target", "Carnival", "Marriott", "Sherwin-Williams", "Prologis"]
     
     #AgriCompaniesStocks = ["GPRE", "CF", "SMG", "TSN", "DF", "NTR", "MOS", "ADM", "FDP", "CVGW"]
-    AgriCompanies= ["(Green Plains)", "(CF Industries)", "(Miracle-Gro)", "(Miracle Gro)", "(Tyson Foods)", "(Dean Foods)", "Nutrien", "(Mosaic Company)", "(Archer-Daniels)","Archer Daniels", "(Del Monte)", "(Calavo Growers)"]
+    #AgriCompanies= ["(Green Plains)", "(CF Industries)", "(Miracle-Gro)", "(Miracle Gro)", "(Tyson Foods)", "(Dean Foods)", "Nutrien", "(Mosaic Company)", "(Archer-Daniels)","Archer Daniels", "(Del Monte)", "(Calavo Growers)"]
     #SourcesPt1 = "abc-news,al-jazeera-english,associated-press,australian-financial-review,axios,bbc-news,bloomberg,business-insider,cbc-news,cbs-news,cnbc,cnn,financial-post,financial-times,fortune,fox-news,google-news,google-news-ca,independent,msnbc,national-greographic"
     #SourcesPt2 = "national-review, nbc-news,newsweek,new-york-magazine,politico,recode,reuters,new-scientist,techcrunch,the-globe-and-mail,the-economist,the-huffinton-post,the-new-york-times,the-wall-street-journal,the-washington-post,time,usa-today,wired"
     BusinessSources = "bloomberg,cnbc,fortune,financial-times,financial-post,the-economist,the-wall-street-journal" #business-insider excluded. 
