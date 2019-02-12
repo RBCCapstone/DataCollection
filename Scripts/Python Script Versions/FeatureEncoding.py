@@ -55,7 +55,7 @@ def loadData():
     fts.columns = ['index']
     fts['index'] = list(map(lambda x: x.strip(), fts['index']))
     arts = pd.read_excel(ARTICLES_DIR)
-    artText = arts.iloc[:,5] 
+    artText = arts['content'] 
     artID = arts['article_id']   #**
     data = {'fts':fts, 'artText': artText, 'artID': artID} #**
     return data
