@@ -50,6 +50,7 @@ def importData(filename):
         df.head()
     except:
         pass
+    
     return df
 
 # PoS Tagger and CFG Definitions
@@ -117,7 +118,7 @@ def getWords(sentence):
         ]
     words = word_tokenize(sentence)
     words = [word for word in words if word.lower() not in stopwords and len(word)>2]
-    #print(words)
+
     return words
 
 def countWords(wordList):
@@ -162,6 +163,7 @@ def get_info(content):
     for tag in tags:
         if tag[1] == 'NNP' or tag[1] == 'NNI' or tag[1] == 'VP':
             final_context.append(tag[0])
+    
     return final_context
 
 
@@ -176,6 +178,7 @@ def re_tag(tagged):
             new_tagged.append((tag[0], tag[1][:-1]))
         else:
             new_tagged.append((tag[0], tag[1]))
+    
     return new_tagged
 
 # extract all unigrams based on all words pulled from context extraction
@@ -196,7 +199,7 @@ def unigramBreakdown(fullContext):
     
     return unigrams
 
-#extracts unigrams AND bigrams pulled by context extraction
+# extracts unigrams AND bigrams pulled by context extraction
 def bigramBreakdown(fullContext):
     bigrams = []
     
@@ -206,10 +209,14 @@ def bigramBreakdown(fullContext):
     
     return bigrams
 
+# did this because I couldn't good way to write the switcher to switch to a non-function
+def ngramDummy(fullContext):
+    return fullContext
+
 # PMI For Tag Ranking
 # return binary representation of article in terms of all keyphrases pulled
 def dfTransform(df, term_column):
-    # df is the article df ; term_col is name of column containing keyterms -- can be unigrams, bigrams, named entities, etc.
+    # df is the article df ;
     keyterms = []
     for article in df[term_column].values:
         keyterms.extend([word.lstrip() for word in (article.split(','))])
@@ -226,13 +233,13 @@ def dfTransform(df, term_column):
     # use keywords as columns
     binEncDf.columns = keyterms
     # keep article_id and prediction from original table
-    df = df.rename(columns={'prediction': 'mktMoving'}) # changed it from prediction because that was also a keyterm
-    binEncDf = df[['article_id','mktMoving']].join(binEncDf)
+    df = df.rename(columns={'prediction': 'mkt_moving'}) # changed it from prediction because that was also a keyterm
+    binEncDf = df[['article_id','mkt_moving']].join(binEncDf)
     
     return binEncDf
 
 # Simple example of getting pairwise mutual information of a term
-def pmiCal(df, x, label_column='mktMoving'):
+def pmiCal(df, x, label_column='mkt_moving'):
     pmilist=[]
     for i in [0,1]:
         for j in [0,1]:
@@ -246,9 +253,10 @@ def pmiCal(df, x, label_column='mktMoving'):
             pmilist.append([i]+[j]+[px]+[py]+[pxy]+[pmi])
     pmiDf = pd.DataFrame(pmilist)
     pmiDf.columns = ['x','y','px','py','pxy','pmi']
+    
     return pmiDf
 
-def pmiIndivCal(df,x,gt, label_column='mktMoving'):
+def pmiIndivCal(df,x,gt, label_column='mkt_moving'):
     px = sum(df[label_column]==gt)/len(df)
     py = sum(df[x]==1)/len(df)
     pxy = len(df[(df[label_column]==gt) & (df[x]==1)])/len(df)
@@ -256,28 +264,22 @@ def pmiIndivCal(df,x,gt, label_column='mktMoving'):
         pmi = math.log((pxy+0.0001)/(px*py+0.0001))
     else:
         pmi = math.log(pxy/(px*py))
+    
     return pmi
 
-# Compute PMI for all terms and all possible labels
-def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mktMoving'): 
-    # calculate all the pmi for top k and store them into one pmidf dataframe
+# calculate all the pmi for all tags across all articles and store top 5 tags for each article in df
+def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mkt_moving'): 
+    
     for i in tqdm(artDf.index): # for all articles
         terms = set(([word.lstrip() for word in (artDf[term_column].iloc[i].split(','))]))
-        pmiposlist = []
         pmineglist = []
 
         for word in terms:
-            #pmilist.append([word]+[pmiCal(df,word)])
-            pmiposlist.append([word]+[pmiIndivCal(binaryEncDf,word,1,label_column)])
             pmineglist.append([word]+[pmiIndivCal(binaryEncDf,word,0,label_column)])
         
-        #pmiDf = pd.DataFrame(pmilist)
-        pmiposlist = pd.DataFrame(pmiposlist)
         pmineglist = pd.DataFrame(pmineglist)
-        pmiposlist.columns = ['word','pmi']
         pmineglist.columns = ['word','pmi']
-        artDf.at[i,'tags_posTop_10'] = (',').join(word for word in pmiposlist.sort_values(by='pmi', ascending=False).head(10)['word'])
-        artDf.at[i,'tags_negBot_10'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(10)['word'])   
+        artDf.at[i,'tags_top_5'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(5)['word'])   
     return artDf
 
 # Functions to run extraction and rank tags
@@ -288,6 +290,7 @@ def calculatePMI(artDf, termType):
     # get binary encoding of articles represented as uni- and bigrams
     binaryEncDf = dfTransform(artDf, termType)
     articleDf_ranked = pmiForAllCal(artDf, binaryEncDf, termType)
+    
     return articleDf_ranked, binaryEncDf
 
 # find most popular keyterms mentioned in news
@@ -296,25 +299,27 @@ def frequencyCounter(binEncDf):
     # output should be a dataframe with: word | 3 of articles mentioning word
     freqDf = binEncDf.drop('article_id', axis=1).sum(axis=0, skipna=True).sort_values(ascending=False).to_frame().reset_index()
     freqDf.columns = ['word','freq_articles']
+    
     return freqDf
 
 # Retrieve context
 def retrieveContext(filename, termType='bigrams'):
-    # import relevant articles
+    # import classified articles
     articleDf = importData(filename)
+    
+    breakdown = {
+        'ngrams': ngramDummy, # store n-grams pulled from context extraction
+        'bigrams': bigramBreakdown, # store bigrams and unigrams captured by context extraction
+        'unigrams': unigramBreakdown # store unigrams captured by separating all terms pulled by context extraction
+        }
     
     for i in articleDf.index:
         # get context for articles
-        keyterms = get_info(articleDf['content'].iloc[i])
-        articleDf.at[i, 'context'] = ', '.join(keyterms)    
-        # separate keyterms pulled from context extraction to get unigrams
-        # this will be used to identify trending words
-        articleDf.at[i, 'unigrams'] = ', '.join(unigramBreakdown(keyterms))       
-        # create list of bigrams and unigrams captured by context extraction
-        articleDf.at[i, 'bigrams'] = ', '.join(bigramBreakdown(keyterms))
+        keyterms = get_info(articleDf['content'].iloc[i])  
+        articleDf.at[i, 'tags'] = ', '.join(breakdown[termType](keyterms))    
     
     # returns article Df with new column for top tags
-    articleDf, binaryEncDf = calculatePMI(articleDf, termType)
+    articleDf, binaryEncDf = calculatePMI(articleDf, 'tags')
     
     # returns most popular terms mentioned across all articles
     trendingTermsDf = frequencyCounter(binaryEncDf)
