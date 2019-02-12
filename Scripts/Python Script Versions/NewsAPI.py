@@ -76,7 +76,7 @@ def articlesToCSV(main_url, k):
         titles.append(ar["title"])
         description.append(ar["description"])
         url.append(ar["url"])
-        source.append(ar["source"])
+        source.append(ar["source"]["id"])
         publishedAt.append(ar["publishedAt"])
         content.append(ar["content"])                
 
@@ -128,7 +128,7 @@ def main(manual, Pullfrom, Pullto, CompanyList):
     #AgriCompanies= ["(Green Plains)", "(CF Industries)", "(Miracle-Gro)", "(Miracle Gro)", "(Tyson Foods)", "(Dean Foods)", "Nutrien", "(Mosaic Company)", "(Archer-Daniels)","Archer Daniels", "(Del Monte)", "(Calavo Growers)"]
     #SourcesPt1 = "abc-news,al-jazeera-english,associated-press,australian-financial-review,axios,bbc-news,bloomberg,business-insider,cbc-news,cbs-news,cnbc,cnn,financial-post,financial-times,fortune,fox-news,google-news,google-news-ca,independent,msnbc,national-greographic"
     #SourcesPt2 = "national-review, nbc-news,newsweek,new-york-magazine,politico,recode,reuters,new-scientist,techcrunch,the-globe-and-mail,the-economist,the-huffinton-post,the-new-york-times,the-wall-street-journal,the-washington-post,time,usa-today,wired"
-    BusinessSources = "bloomberg,cnbc,fortune,financial-times,financial-post,the-economist,the-wall-street-journal" #business-insider excluded. 
+    BusinessSources = "bloomberg,cnbc,fortune,financial-times,financial-post,the-economist,the-wall-street-journal, reuters, business-insider, the-globe-and-mail, the-washington-post, the-new-york-times, cnn, fox-news, associated-press, cbc-news, cnbc, msnbc, nbc-news, usa-today" #business-insider excluded. 
     
     #Define Dates to Gather Data, can set manual dates or use Today - 1
     #Today's date 
