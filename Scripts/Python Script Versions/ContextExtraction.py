@@ -235,7 +235,8 @@ def dfTransform(df, term_column):
     binEncDf.columns = keyterms
     # keep article_id and prediction from original table
     df = df.rename(columns={'prediction': 'mkt_moving'}) # changed it from prediction because that was also a keyterm
-    binEncDf = df[['article_id','mkt_moving']].join(binEncDf)
+    # join prediction with encoding
+    binEncDf = df[['mkt_moving']].join(binEncDf)
     
     return binEncDf
 
@@ -298,7 +299,7 @@ def calculatePMI(artDf, termType):
 def frequencyCounter(binEncDf):
     # sum each column of binary encoded articles
     # output should be a dataframe with: word | 3 of articles mentioning word
-    freqDf = binEncDf.drop('article_id', axis=1).sum(axis=0, skipna=True).sort_values(ascending=False).to_frame().reset_index()
+    freqDf = binEncDf.sum(axis=0, skipna=True).sort_values(ascending=False).to_frame().reset_index()
     freqDf.columns = ['word','freq_articles']
     
     return freqDf

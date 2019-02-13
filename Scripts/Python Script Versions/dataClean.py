@@ -20,17 +20,17 @@ def DataClean(raw):
     #raw = pd.read_excel(RAW_DIR)
 
     #remove blanks (NaN)
-    df = raw.dropna(subset = ['content', 'title']) 
+    df = raw.dropna() #raw.dropna(subset = ['content', 'title']) 
 
     #remove blocked articles without content
     df = df[df.content.str.contains("Your usage has been flagged") == False]
     df = df[df.content.str.contains("To continue, please click the box") == False]
 
-    #remove duplicates by url
-    df = df.drop_duplicates(subset=['url'], keep='first')
-
     #remove duplicates by content
     df = df.drop_duplicates(subset=['content'], keep='first')
+    
+    #remove duplicates by url
+    df = df.drop_duplicates(subset=['url'], keep='first')
 
     #remove punctuation, keep orig content
     df['origContent'] = df['content']
