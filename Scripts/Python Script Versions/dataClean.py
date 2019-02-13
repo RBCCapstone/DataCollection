@@ -1,71 +1,44 @@
-
-# coding: utf-8
-
-# In[20]:
-
-
-def DataClean(raw):
+def DataClean(rawDf):
     #import FeatureEncoding
     import os
     from os import listdir
     from os.path import isfile, join
     from pathlib import Path
     import pandas as pd
-    import FeatureEncoding
     import re, string
 
-    # Import Article Data including corresponding Y values
-    #DATA_DIR = "Data"    
-    #RAW_DIR = os.path.join(DATA_DIR, filename)
-    #raw = pd.read_excel(RAW_DIR)
-
     #remove blanks (NaN)
-    df = raw.dropna() #raw.dropna(subset = ['content', 'title']) 
+    df = rawDf.dropna(subset = ['content', 'title']) 
 
     #remove blocked articles without content
-    df = df[df.content.str.contains("Your usage has been flagged") == False]
-    df = df[df.content.str.contains("To continue, please click the box") == False]
-
-    #remove duplicates by content
-    df = df.drop_duplicates(subset=['content'], keep='first')
+    df = df[df.content.str.contains('Your usage has been flagged', case=False) == False]
+    df = df[df.content.str.contains('To continue, please click the box', case=False) == False]
     
-    #remove duplicates by description
+    # vidoes/ads/commentary
+    df = df[df.description.str.contains('The "Fast Money" traders share', case=False) == False]
+    df = df[df.description.str.contains('stuff we think you', case=False) == False]
+    df = df[df.description.str.contains('best deals on', case=False) == False]
+    
+    #remove transcripts
+    df = df[df.title.str.contains('transcript', case=False) == False]
+    
+    #remove cramer
+    df = df[df.title.str.contains('cramer', case=False) == False]
+    
+    #remove duplicates
+    # by self-identified repeat
+    df = df[df.title.str.contains('rpt', case=False) == False]
+    # by title
+    df = df.drop_duplicates(subset=['title'], keep='first')
+    # by content
+    df = df.drop_duplicates(subset=['content'], keep='first')
+    # by decription
     df = df.drop_duplicates(subset=['description'], keep='first')
     
-    #remove duplicates by url
-    df = df.drop_duplicates(subset=['url'], keep='first')
-
     #remove punctuation, keep orig content
     df['origContent'] = df['content']
     pattern = re.compile('[^0-9a-zA-Z ]+')
     content= map(lambda x: pattern.sub(' ', x), df['content'])
     df['content']=list(content)
-
-    # Output Cleaned Article Data
-    # rename index column 
-    df.rename(columns={'index': 'article_id'}, inplace=True)
     
-    ## Commented out excel interaction ##
-    #OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.csv")
-    #pd.DataFrame.to_csv(df, path_or_buf=OUTPUT_DIR)
-    
-    #OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
-    #writer = pd.ExcelWriter(OUTPUT_DIR)
-    #df.to_excel(writer,'Sheet1')
-    #writer.save()
     return df
-
-
-# In[21]:
-
-
-def test():
-    filename = "sortedarticlesRetail-List-1.xlsx"
-    DataClean(filename)
-
-
-# In[22]:
-
-
-#test()
-
