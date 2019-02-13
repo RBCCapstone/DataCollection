@@ -18,20 +18,10 @@ from sklearn.metrics import average_precision_score, accuracy_score, precision_s
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# In[21]:
-
-
-def LoadData(filename):
-    DATA_DIR = "Data"
-    ENCODING_DIR = os.path.join(DATA_DIR, filename)
-    data = pd.read_csv(ENCODING_DIR, index_col=[0])
-    return data
-
-
 # In[33]:
 
 
-def pairup(Csim, npV, rows, X,Y):
+def pairup(npV, rows, Y):
     for i in range(rows):
         #find most related articles indexed
         a = npV[i,:]
@@ -39,11 +29,11 @@ def pairup(Csim, npV, rows, X,Y):
         index2= index[np.argsort(a[index])]
 
         #show the index in X matrix
-        print(i)
-        print(index)
-        print(index2)
+        #print(i)
+        #print(index)
+        #print(index2)
         #show the similarity value
-        print(a[index2])
+        #print(a[index2])
 
         related = []
         #ensure that same article is not ranked as the most similar article
@@ -53,42 +43,31 @@ def pairup(Csim, npV, rows, X,Y):
             elif len(related) == 3:
                 pass
             else:
-                related.append(str(X.iloc[index2[j]]['article_id']))
+                related.append(str(index2[j]))
 
         Y.at[i, 'related_articles'] = ', '.join(related)
 
-    Final = Y[['article_id', 'related_articles']]
-        
-    return Final
-    
+    return Y[['related_articles']]
 
 
 # In[23]:
 
 
-def recommender(Encoding, contextoutput):
-    X = LoadData(Encoding)
-    Temp = X.drop(columns=['article_id'])
+def recommender(Encoding, contextTable):
+    Encoded = Encoding.drop(columns=['article_id'])
     
     #Similarity matrix between each article
-    Csim = cosine_similarity(Temp)
+    Csim = cosine_similarity(Encoded)
 
     #convert to numpy
     npV = np.asarray(Csim)
     rows = np.size(npV,0)
-    
-    #set a temporary copy
-    Y = X
+
     
     #match most related articles by article index
-    finalMatches = pairup(Csim, npV, rows, X,Y)
+    finalMatches = pairup(npV, rows, Encoded)
+    finalTable = contextTable.join(finalMatches, how='left')
     
-    #load final table output
-    DATA_DIR = "Data"
-    ENCODING_DIR = os.path.join(DATA_DIR, contextoutput)
-    contextTable = pd.read_excel(ENCODING_DIR, index_col=[0])
-    
-    finalTable = contextTable.merge(finalMatches, on='article_id', how='left')
     return finalTable
     
 
