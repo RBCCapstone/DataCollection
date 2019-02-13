@@ -29,13 +29,16 @@ def DataClean(raw):
     #remove duplicates by content
     df = df.drop_duplicates(subset=['content'], keep='first')
     
+    #remove duplicates by description
+    df = df.drop_duplicates(subset=['description'], keep='first')
+    
     #remove duplicates by url
     df = df.drop_duplicates(subset=['url'], keep='first')
 
     #remove punctuation, keep orig content
     df['origContent'] = df['content']
     pattern = re.compile('[^0-9a-zA-Z ]+')
-    content= map(lambda x: pattern.sub('', x), df['content'])
+    content= map(lambda x: pattern.sub(' ', x), df['content'])
     df['content']=list(content)
 
     # Output Cleaned Article Data
