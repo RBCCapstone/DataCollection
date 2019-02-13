@@ -43,10 +43,10 @@ from tqdm import tqdm
 # In[3]:
 
 
-def loadData():
+def loadData(articleDB):
     DATA_DIR = "Data"
     FEATURES_DIR = os.path.join(DATA_DIR, "retailFeatureSet.csv")
-    ARTICLES_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
+    #ARTICLES_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
     
     fts = pd.read_csv(FEATURES_DIR)
     for col in fts.columns:
@@ -54,9 +54,9 @@ def loadData():
             fts = fts.drop([col], axis = 1)
     fts.columns = ['index']
     fts['index'] = list(map(lambda x: x.strip(), fts['index']))
-    arts = pd.read_excel(ARTICLES_DIR)
+    arts = articleDB
     artText = arts['content'] 
-    artID = arts['article_id']   #**
+    artID = arts['url']   #**
     data = {'fts':fts, 'artText': artText, 'artID': artID} #**
     return data
 
@@ -149,7 +149,11 @@ def encoding(encodeType, **kwargs):
     # If you'd like to save as csv, use "csv = True"
         
     # Load up data
-    data = loadData()
+    if 'df' in kwargs:
+        data = loadData(kwargs['df'])
+    else:
+        data = loadData()
+        
     # Run corresponding encoding type and pass data
     options = {0 : binEncoding,
                 1 : tfEncoding,
@@ -157,7 +161,6 @@ def encoding(encodeType, **kwargs):
     
     X = options[encodeType](data)
     X['article_id'] = data['artID'].values #**
-    print(X.head())
     
     # Save as csv file in CLASSIFICATION data folder =)
     if ('csv' in kwargs) and (kwargs['csv']):
@@ -177,8 +180,8 @@ def encoding(encodeType, **kwargs):
 
 
 def main(): # Stuff to do when run from the command line    
-    encoding(0, csv = True)
-    pass  
+    enc = encoding(0, csv = True)
+    return enc 
  
 
 

@@ -17,49 +17,49 @@ def LoadData(filename):
     data = pd.read_csv(ENCODING_DIR)
     return data
 
-def runLogReg(filename):
-    X = LoadData(filename) # This would be named to whatever today's binEncoding file is called
+def runLogReg(binaryMatrix, articleDB):
+    #X = LoadData(filename) # This would be named to whatever today's binEncoding file is called
+    
+    X = binaryMatrix
     artID = X['article_id']
-    X = X.drop(columns=['article_id', 'Unnamed: 0'])
+    X = X.drop(columns=['article_id'])
 
     #print(X.head(20))
     classifier = pickle.load(open("ourClassifier.p", "rb"))
     
     y_predict = classifier.predict(X)
     # get log scores for train and test set
-    y_log_proba = classifier.predict_log_proba(X)    
+    y_proba = classifier.predict_proba(X)    
     
     #tie the scores and predictions to specific articles
-    scores = pd.DataFrame(data=y_log_proba)
+    scores = pd.DataFrame(data=y_proba)
     scores['article_id'] = artID.values
     scores['prediction'] = y_predict
     
     #rename Columns
-    scores.columns = ['nonRel', 'Rel', 'article_id', 'prediction']
+    scores.columns = ['nonRel', 'Rel', 'url', 'prediction']
     
     #rank articles from most to least relevant
-    scores['difference'] = scores['Rel'] - scores['nonRel'] 
-    ScoreRanked = scores.sort_values(['difference'], ascending=[0])
+    ScoreRanked = scores.sort_values(['Rel'], ascending=[0])
 
     #import cleaned articles
-    DATA_DIR = "Data"
-    ENCODING_DIR = os.path.join(DATA_DIR, 'cleanedArticles.xlsx')
-    Articles = pd.read_excel(ENCODING_DIR)
+    #DATA_DIR = "Data"
+    #ENCODING_DIR = os.path.join(DATA_DIR, 'cleanedArticles.xlsx')
+    Articles = articleDB
     
     
     #Do a sql style join with the results and actual article data on 'article_id'   
-    Combined = ScoreRanked.merge(Articles, on='article_id', how='left')
+    Combined = ScoreRanked.merge(Articles, on='url', how='left')
     print(Combined[['title', 'description']].head())
     #Save as csv, tells you encoding type
-    thispath = Path().absolute()
-    OUTPUT_DIR = os.path.join(thispath, "Data", "results_"+filename)
-    pd.DataFrame.to_csv(Combined, path_or_buf=OUTPUT_DIR)
+    #thispath = Path().absolute()
+    #OUTPUT_DIR = os.path.join(thispath, "Data", "results_"+filename)
+    #pd.DataFrame.to_csv(Combined, path_or_buf=OUTPUT_DIR)
     
     #Save as excel file (better because weird characters encoded correctly)
-    OUTPUT_DIR = os.path.join(DATA_DIR, "results_encoding.xlsx")
-    writer = pd.ExcelWriter(OUTPUT_DIR)
-    Combined.to_excel(writer,'Sheet1')
-    writer.save()
+    #OUTPUT_DIR = os.path.join(DATA_DIR, "results_encoding.xlsx")
+    #writer = pd.ExcelWriter(OUTPUT_DIR)
+    #Combined.to_excel(writer,'Sheet1')
+    #writer.save()
+    return Combined
 
-filename = "binEncoding.csv"
-runLogReg(filename)

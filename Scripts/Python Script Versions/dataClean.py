@@ -4,7 +4,7 @@
 # In[20]:
 
 
-def DataClean(filename):
+def DataClean(raw):
     #import FeatureEncoding
     import os
     from os import listdir
@@ -15,9 +15,9 @@ def DataClean(filename):
     import re, string
 
     # Import Article Data including corresponding Y values
-    DATA_DIR = "Data"    
-    RAW_DIR = os.path.join(DATA_DIR, filename)
-    raw = pd.read_excel(RAW_DIR)
+    #DATA_DIR = "Data"    
+    #RAW_DIR = os.path.join(DATA_DIR, filename)
+    #raw = pd.read_excel(RAW_DIR)
 
     #remove blanks (NaN)
     df = raw.dropna(subset = ['content', 'title']) 
@@ -41,13 +41,16 @@ def DataClean(filename):
     # Output Cleaned Article Data
     # rename index column 
     df.rename(columns={'index': 'article_id'}, inplace=True)
-    OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.csv")
-    pd.DataFrame.to_csv(df, path_or_buf=OUTPUT_DIR)
     
-    OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
-    writer = pd.ExcelWriter(OUTPUT_DIR)
-    df.to_excel(writer,'Sheet1')
-    writer.save()
+    ## Commented out excel interaction ##
+    #OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.csv")
+    #pd.DataFrame.to_csv(df, path_or_buf=OUTPUT_DIR)
+    
+    #OUTPUT_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
+    #writer = pd.ExcelWriter(OUTPUT_DIR)
+    #df.to_excel(writer,'Sheet1')
+    #writer.save()
+    return df
 
 
 # In[21]:

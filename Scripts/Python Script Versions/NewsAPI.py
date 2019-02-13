@@ -46,20 +46,23 @@ def News(querylist, sources, fromdate, todate):
     totalResults = open_bbc_page["totalResults"]
     print(totalResults)
     
-    #Write to CSV by page, until all articles in URL are written
+    #Write to dataframe by page, until all articles in URL are written
+    df = pd.DataFrame()
     j = 1
-    articlesToCSV(main_url, j) #print to csv at page 1 first
+    df = articlesToDF(main_url, j, df) #update df, page 1 first
     totalResults = totalResults - 100 
-   
+
     
     while int(totalResults) > 0:
         j = j + 1 #start printing to csv at page 2
         main_url = " https://newsapi.org/v2/everything?q=(" + completequery + ")&sources=" + sources + "&from=" + fromdate + "&to=" + todate + "&pageSize=100&page=" + str(j) + "&apiKey=" + newsapiKey
-        articlesToCSV(main_url, j)
+        df = articlesToDF(main_url, j, df)
         totalResults = totalResults - 100
+        
+    return df
 
     
-def articlesToCSV(main_url, k):
+def articlesToDF(main_url, k, df):
     # getting all articles in a string article
     open_bbc_page = requests.get(main_url).json()  
     article = open_bbc_page["articles"]
@@ -79,15 +82,33 @@ def articlesToCSV(main_url, k):
         source.append(ar["source"]["id"])
         publishedAt.append(ar["publishedAt"])
         content.append(ar["content"])                
-
+    
+    # Translate Array columns into a dataframe to append to the main dataframe
+    tempdf = pd.DataFrame()
+    tempdf["title"]=titles
+    tempdf["description"]=description
+    tempdf["url"]=url
+    tempdf["source"]=source
+    tempdf["date"]=publishedAt
+    tempdf["content"]=content
+    
+    if df.shape[0] == 0:
+        df = tempdf
+    else:
+        df = df.append(tempdf)
+    
+    return df
+           
+    
              # writing all trending news to csv        
-    with open('articles.csv', 'a', newline='',encoding='utf-8-sig') as f:
-        articlewriter = csv.writer(f, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        for i in range(len(titles)):
-            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i], source[i], publishedAt[i], content[i])
-            articlewriter.writerow(s)
-    f.close()
-
+#    with open('articles.csv', 'a', newline='',encoding='utf-8-sig') as f:
+#        articlewriter = csv.writer(f, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+#        for i in range(len(titles)):
+#            s = (((k-1)*100) + i + 1, titles[i], description[i], url[i], source[i], publishedAt[i], content[i])
+#            articlewriter.writerow(s)
+#    f.close()
+    
+    
 
 # In[2]:
 
@@ -98,7 +119,6 @@ def sortarticles():
     
     articles = pd.read_csv("articles.csv", header= None)
     articles.columns = ["index", "title", "description", "url", "source", "date", "content"]
-    articles.head()
     
     # convert column to datetype
     articles['date']=pd.to_datetime(articles.date)
@@ -155,7 +175,7 @@ def main(manual, Pullfrom, Pullto, CompanyList):
     
     #Run to collect articles that fit within your query (for Team use)
     if CompanyList == 6:
-        News(RetailCompaniesAll, BusinessSources, Pull_From, Pull_To)
+        df = News(RetailCompaniesAll, BusinessSources, Pull_From, Pull_To)
     elif CompanyList == 1:
         News(RetailCompanies1, BusinessSources, Pull_From, Pull_To)
     elif CompanyList == 2:
@@ -169,5 +189,7 @@ def main(manual, Pullfrom, Pullto, CompanyList):
 
 
     #Function call below to sort the articles by date
-    sortarticles()
+    df.sort_values(by="date")
+    
+    return df
     

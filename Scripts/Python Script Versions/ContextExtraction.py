@@ -116,6 +116,7 @@ def getWords(sentence):
         "the", "a", "of", "have", "has", "had", "having"
         #"am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "just", "don", "now"
         ]
+
     words = word_tokenize(sentence)
     words = [word for word in words if word.lower() not in stopwords and len(word)>2]
 
@@ -303,9 +304,9 @@ def frequencyCounter(binEncDf):
     return freqDf
 
 # Retrieve context
-def retrieveContext(filename, termType='bigrams'):
+def retrieveContext(articleDB, termType='bigrams'):
     # import classified articles
-    articleDf = importData(filename)
+    articleDf = articleDB
     
     breakdown = {
         'ngrams': ngramDummy, # store n-grams pulled from context extraction
@@ -325,17 +326,17 @@ def retrieveContext(filename, termType='bigrams'):
     trendingTermsDf = frequencyCounter(binaryEncDf)
     
     #Save as excel file (better because weird characters encoded correctly)
-    DATA_DIR = "Data"
-    OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
-    writer = pd.ExcelWriter(OUTPUT_DIR)
-    articleDf.to_excel(writer,'Sheet1')
-    writer.save()
+    #DATA_DIR = "Data"
+    #OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
+    #writer = pd.ExcelWriter(OUTPUT_DIR)
+    #articleDf.to_excel(writer,'Sheet1')
+    #writer.save()
     
     #Save as excel file (better because weird characters encoded correctly)
-    DATA_DIR = "Data"
-    OUTPUT_DIR = os.path.join(DATA_DIR, "trending_terms.xlsx")
-    writer = pd.ExcelWriter(OUTPUT_DIR)
-    trendingTermsDf.to_excel(writer,'Sheet1')
-    writer.save()
+    #DATA_DIR = "Data"
+    #OUTPUT_DIR = os.path.join(DATA_DIR, "trending_terms.xlsx")
+    #writer = pd.ExcelWriter(OUTPUT_DIR)
+    #trendingTermsDf.to_excel(writer,'Sheet1')
+    #writer.save()
 
-    return articleDf
+    return articleDf, trendingTermsDf
