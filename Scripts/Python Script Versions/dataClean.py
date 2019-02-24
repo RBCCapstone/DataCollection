@@ -16,9 +16,7 @@ def DataClean(articleDf):
     # vidoes/ads/commentary
     articleDf = articleDf[articleDf.description.str.contains('The "Fast Money" traders share their first moves for the market open.', case=False) == False]
     articleDf = articleDf[articleDf.description.str.contains('stuff we think you', case=False) == False]
-    articleDf = articleDf[articleDf.title.str.contains('opinion', case=False) == False]
-    articleDf = articleDf[articleDf.content.str.contains('awesome deals', case=False) == False]
-    
+
     #remove transcripts
     articleDf = articleDf[articleDf.title.str.contains('transcript', case=False) == False]
 
@@ -38,21 +36,14 @@ def DataClean(articleDf):
     # by decription
     articleDf = articleDf.drop_duplicates(subset=['description'], keep='first')
 
-    #clean content, maintain punctuation
-    articleDf['origContent'] = articleDf['content']  
-    # remove 
-    #Replace new lines with spaces
-    pat_amp = re.compile('amp;')
-    articleDf['cleanContent'] = list(map(lambda x: pat_amp.sub('', x), articleDf['content']))
-    #Replace new lines with spaces
-    pat_url = re.compile('[a-z]+?[.]?[a-z]+?[.]?[a-z]+[.]?[\/\/]\S+')
-    articleDf['cleanContent'] = list(map(lambda x: pat_url.sub('', x), articleDf['cleanContent']))
-    pat_https = re.compile('https://')
-    articleDf['cleanContent'] = list(map(lambda x: pat_https.sub('', x), articleDf['cleanContent']))
-
     articleDf = articleDf.reset_index(drop=True)
+
+    # CLEAN ORIGINAL CONTENT
+    articleDf['origContent'] = articleDf['content'] 
+
+    #Remove nonsense sentence from original content pull
     for i in articleDf.index:
-        article = articleDf['cleanContent'].iloc[i].split('\r\n')
+        article = articleDf['origContent'].iloc[i].split('\r\n')
 
         # remove lines with no period
         article[:] = [sentence for sentence in article if '.' in sentence]
@@ -71,13 +62,57 @@ def DataClean(articleDf):
         article[:] = [sentence for sentence in article if not('Photo' in sentence)]
         article[:] = [sentence for sentence in article if not('copyright' in sentence.lower())]
         article[:] = [sentence for sentence in article if not('©' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('get our daily' in sentence.lower())]
 
-        #print(article)
-        articleDf.at[i,'cleanContent']=' '.join(article)
-    
-    # remove punctuation for feature selection
-    pat_punctuation = re.compile('[^0-9a-zA-Z\s]+')
-    articleDf['content'] = list(map(lambda x: pat_punctuation.sub(' ', x), articleDf['cleanContent']))
-    
+        articleDf.at[i,'origContent']='\r\n'.join(article)
+
+    #Remove videos from cnbc links
+    pat_cnbcVid = re.compile('div &gt; div\.group &gt; p:first-child"&gt;')
+    articleDf['origContent'] = list(map(lambda x: pat_cnbcVid.sub('', x), articleDf['origContent']))
+    #Remove amp;
+    pat_amp = re.compile('amp;')
+    articleDf['origContent'] = list(map(lambda x: pat_amp.sub('', x), articleDf['origContent']))
+
+    # CLEAN CONTENT FOR FEATURE SELECTION articleDf['content'] AND CONTEXT EXTRACTION articleDf['contentWithStops'] 
+
+    #Remove time
+    pat_time = re.compile('[0-9]{0,2}:?[0-9]{1,2}\s?[aApP]\.?[mM]\.?')
+    articleDf['content'] = list(map(lambda x: pat_time.sub(' ', x), articleDf['origContent'].str.lower()))
+
+    #Remove urls
+    pat_url = re.compile('[a-z]+?[.]?[a-z]+?[.]?[a-z]+[.]?[\/\/]\S+')
+    articleDf['content'] = list(map(lambda x: pat_url.sub('URL', x), articleDf['content']))
+    pat_https = re.compile('https://')
+    articleDf['content'] = list(map(lambda x: pat_https.sub('', x), articleDf['content']))
+
+    #Remove stopwords
+    stopwords = [
+        # dates/times
+        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning", "evening","today","pm","am",
+        # symbols that don't separate a sentence
+        '$','“','”','’','—', '-',
+        # specific article terms that are useless
+        "read", "share", "file", "'s", "photo", "inc", "corp", "group", "inc", "corp", "source", "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","york","msnbc","ap","said","nbcuniversal",
+        # other useless terms
+        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "co", "inc", "com", "theyve", "theyre", "theres", "heres", "didnt", "wouldn", "couldn", "didn","according", "just", "us", "ll", "times","yes","such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will", "wasn", "etc", "but", "hello", "welcome", "re","my","wasnt","also","us","the", "a", "of", "have", "has", "had", "having", "hello", "welcome", "yeah", "wasn", "today", "etc", "ext","definitely", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will"
+    ]
+    pat_stopwords = re.compile(r'\b(' + r'|'.join(stopwords) + r')\b\s*')
+    articleDf['content'] = list(map(lambda x: pat_stopwords.sub(' ', x), articleDf['content'].str.lower()))
+
+    #Remove single character words
+    pat_charLim = re.compile('\s[a-zA-Z]\s')
+    articleDf['content'] = list(map(lambda x: pat_charLim.sub(' ', x), articleDf['content']))
+
+    #Remove characters that don't separate a sentence or aren't $ signs
+    # FOR context extraction
+    pat_nonStops = re.compile('[^\.\?!,;\$0-9a-zA-Z]+')
+    articleDf['contentWithStops'] = list(map(lambda x: pat_nonStops.sub(' ', x), articleDf['content']))
+
+    #Remove punctuation 
+    # FOR feature selection/encoding
+    pat_punctuation = re.compile('[^a-zA-Z]+')
+    articleDf['content'] = list(map(lambda x: pat_punctuation.sub(' ', x), articleDf['content']))
+
+    #Remove single characters
+    articleDf['content'] = list(map(lambda x: pat_charLim.sub(' ', x), articleDf['content']))
+
     return articleDf
