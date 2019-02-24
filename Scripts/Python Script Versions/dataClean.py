@@ -49,19 +49,12 @@ def DataClean(articleDf):
         article[:] = [sentence for sentence in article if '.' in sentence]
         # remove lines with less than 5 words
         article[:] = [sentence for sentence in article if len(sentence.split())>5]
-
-        # remove lines with terms that are associated with promotions or credits
-        article[:] = [sentence for sentence in article if not('get breaking news' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('click here' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('write to' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('subscribe' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('read more' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('read or share' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('reporting by' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('twitter, instagram' in sentence.lower())]
+        # remove photo credits
         article[:] = [sentence for sentence in article if not('Photo' in sentence)]
-        article[:] = [sentence for sentence in article if not('copyright' in sentence.lower())]
-        article[:] = [sentence for sentence in article if not('©' in sentence.lower())]
+        blackList = ['get breaking news','click here','write to','subscribe','read more','read or share'
+                     ,'reporting by','twitter, instagram','comment','copyright','©']
+        # remove lines with terms that are associated with useless sentences
+        article[:] = [sentence for sentence in article if not any(term in sentence.lower() for term in blackList)]
 
         articleDf.at[i,'origContent']='\r\n'.join(article)
 
