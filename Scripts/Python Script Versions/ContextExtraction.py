@@ -109,9 +109,9 @@ def getWords(sentence):
         # symbols that don't separate a sentence
         '$','“','”','’','—',
         # specific article terms that are useless
-        "read", "share", "file", "'s","i", "photo", "percent","s", "t", "inc.", "corp", "group", "inc", "corp.", "source", "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","york","msnbc","ap",
+        "read", "share", "file", "photo", "percent", "corp", "group", "inc", "source", "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","york","msnbc","ap",
         # other useless terms
-        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "co", "inc", "com", "theyve", "theyre", "theres", "heres", "didnt", "wouldn", "couldn", "didn","nbcuniversal","according", "just", "us", "ll", "times","yes","such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will", "wasn", "etc", "but", "hello", "welcome", "re","my"
+        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "co", "inc", "com", "theyve", "theyre", "theres", "heres", "didnt", "wouldn", "couldn", "didn","nbcuniversal","according", "just", "us", "ll", "times","yes","such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will", "wasn", "etc", "but", "hello", "welcome", "re","ve","hardly"
         #,
         # etc
        # "us","the", "a", "of", "have", "has", "had", "having", "hello", "welcome", "yeah", "wasn", "today", "etc", "ext","definitely", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will"
@@ -317,7 +317,7 @@ def retrieveContext(articleDB, termType='bigrams'):
     
     for i in articleDf.index:
         # get context for articles
-        keyterms = get_info(articleDf['content'].iloc[i])  
+        keyterms = get_info(articleDf['contentWithStops'].iloc[i])  
         articleDf.at[i, 'tags'] = ', '.join(breakdown[termType](keyterms))    
     
     # returns article Df with new column for top tags
