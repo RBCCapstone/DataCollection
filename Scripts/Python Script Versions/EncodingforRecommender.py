@@ -40,8 +40,6 @@ def getFeatures(ArticleDB):
     #print(X_train_counts)
     features= countVect.vocabulary_
     fts = list(features.keys())
-    print(len(fts))
-    print(fts)
     
     return artText, fts
 
