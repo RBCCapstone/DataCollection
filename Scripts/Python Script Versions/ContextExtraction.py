@@ -103,22 +103,10 @@ cfg['VBN+NN'] = 'VP' # collects terms like "pledged to adapt"
 
 # Utility functions for context extraction
 def getWords(sentence):
-    stopwords = [
-        # dates/times
-        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning", "evening","today",
-        # symbols that don't separate a sentence
-        '$','“','”','’','—',
-        # specific article terms that are useless
-        "read", "share", "file", "photo", "percent", "corp", "group", "inc", "source", "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","york","msnbc","ap",
-        # other useless terms
-        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "co", "inc", "com", "theyve", "theyre", "theres", "heres", "didnt", "wouldn", "couldn", "didn","nbcuniversal","according", "just", "us", "ll", "times","yes","such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will", "wasn", "etc", "but", "hello", "welcome", "re","ve","hardly"
-        #,
-        # etc
-       # "us","the", "a", "of", "have", "has", "had", "having", "hello", "welcome", "yeah", "wasn", "today", "etc", "ext","definitely", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "while", "of", "at", "by", "for", "about", "into", "through", "during", "before", "after", "to", "from", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "don", "now", "will"
-        ]
-
     words = word_tokenize(sentence)
-    words = [word.lower() for word in words if word.lower() not in stopwords and len(word)>1]
+    words = [word.lower() for word in words if len(word)>1] 
+    #word.lower() not in stopwords and
+    # no longer need above because cleaning all done in DataClean.py
 
     return words
 
@@ -297,8 +285,9 @@ def calculatePMI(artDf, termType):
 
 # find most popular keyterms mentioned in news
 def frequencyCounter(binEncDf):
+    binEncDf = binEncDf.drop(['mkt_moving'], axis=1)
     # sum each column of binary encoded articles
-    # output should be a dataframe with: word | 3 of articles mentioning word
+    # output should be a dataframe with: word | # of articles mentioning word
     freqDf = binEncDf.sum(axis=0, skipna=True).sort_values(ascending=False).to_frame().reset_index()
     freqDf.columns = ['word','freq_articles']
     
