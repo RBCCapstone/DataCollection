@@ -1,6 +1,6 @@
 #Script to extract important topics from content
-#originally written by: vipul-sharma20
-#modifications made by: jadekhiev
+# based on code written by: vipul-sharma20
+# modifications made by: jadekhiev
 
 # imports
 import os
@@ -21,159 +21,154 @@ import operator
 
 #Natural Language Processing Packages
 import re
-import nltk
-
-from nltk import tokenize
-nltk.download('punkt')
-from nltk.tokenize import word_tokenize
-from nltk.tokenize import sent_tokenize
-import nltk
-nltk.download('brown')
-from nltk.corpus import brown
+import spacy
+# python -m spacy download en
+nlp = spacy.load('en') #spacy PoS tagger
 
 #Progress bar
 from tqdm import tqdm
 
-# Import articles
-def importData(filename):
-    """
-    Import data into df
-    """
-    #Import Labelled Data
-    DATA_DIR = "Data"
-    thispath = Path().absolute()
-    ARTICLES = os.path.join(DATA_DIR, filename)
-    
-    df = pd.read_excel(ARTICLES)
-
-    try:
-        df.head()
-    except:
-        pass
-    
-    return df
-
-# PoS Tagger and CFG Definitions
-# train tagger with browns news corpus
-train = brown.tagged_sents(categories='news')
-
-# custom regex tagging
-regex_tag = nltk.RegexpTagger([
-     #(r'[$][0-9]+\s[MmBbTt]\S+','DV'), #dollar value 
-     (r'^[-\:]?[0-9]+(.[0-9]+)?$', 'CD'),
-     (r'.*able$', 'JJ'),
-     (r'^[A-Z].*$', 'NNP'),
-     (r'.*ly$', 'RB'),
-     (r'.*s$', 'NNS'),
-     (r'.*ing$', 'VBG'),
-     (r'.*ed$', 'VBD'),
-     (r'.[\/\/]\S+', 'URL'), #URL / useless
-     (r'.*', 'NN')
-])
-
-unigram_tag = nltk.UnigramTagger(train, backoff=regex_tag)
-bigram_tag = nltk.BigramTagger(train, backoff=unigram_tag)
-trigram_tag = nltk.TrigramTagger(train, backoff=bigram_tag)
-
-# PoS Browns Corpus Tagging: https://en.wikipedia.org/wiki/Brown_Corpus
-# custom defined Context Free Grammar (CFG) by vipul
-cfg = dict()
-cfg['NNP+NNP'] = 'NNP'
-cfg['NN+NN'] = 'NNI'
-cfg['NNP+NNI'] = 'NNI'
-cfg['NNI+NN'] = 'NNI'
-cfg['NNI+NNI'] = 'NNI'
-cfg['NNI+NNP'] = 'NNI'
-cfg['JJ+JJ'] = 'JJ'
-cfg['JJ+NN'] = 'NNI'
-cfg['CD+CD'] = 'CD'
-cfg['NPI+NNP'] = 'NNP' # this is specific for collecting terms with the word deal
-cfg['NNI+RP'] = 'NNI' # collects terms like "heats up" -- RP = adverb particle
-cfg['RB+NN'] = 'NNP'# combination for monetary movement e.g. quarterly[RB] profit[NN] fell [VBD] -- RB = adverb
-cfg['NNP+VBD'] = 'VPI' #VBP = a verb phrase
-cfg['MD+VB'] = 'VPI' # collects terms like "will lose" (verb phrase incomplete)
-cfg['MD+NN'] = 'VPI' # collects terms like "will soar" (verb phrase incomplete)
-cfg['VPI+NN'] = 'VP' # collects terms like "will lose ground"
-cfg['NNI+VP'] = 'VP' # collects terms like "index will soar"
-cfg['NN+VPI'] = 'VP' # collects terms like "index will soar"
-cfg['NNP+VPI'] = 'VP' # collects terms like "index will soar"
-cfg['VPI+TO'] = 'VPI' # collect past participle verbs with to e.g. pledged to
-cfg['VBN+TO'] = 'VBN' # collect past participle verbs with to e.g. pledged to
-cfg['VBN+NN'] = 'VP' # collects terms like "pledged to adapt"
-
 # Utility functions for context extraction
-def getWords(sentence):
-    words = word_tokenize(sentence)
-    words = [word.lower() for word in words if len(word)>1] 
-    #word.lower() not in stopwords and
-    # no longer need above because cleaning all done in DataClean.py
-
-    return words
+def tagWords(article):
+    # spacy context extraction
+    # this is our spacy tagger 
+    taggedArticle = nlp(article)
+    taggedTerm = []
+    stopwords = [
+        # dates/times
+        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
+        , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
+        , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
+        ,"today","pm","am","daily", 
+        # specific article terms that are useless
+        "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+        , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
+        ,"said","nbcuniversal","newsletterupgrade","nbc", "news",'url',"cbc"
+        # other useless terms
+        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
+        , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
+        , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
+        , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
+        , "couldn", "didn","are","is", "was","will", "have", "be", "such"
+    ]
+    for token in taggedArticle:
+        if token.text.lower() not in stopwords and len(token.text)>2:
+            taggedTerm.append((token.text,token.pos_,token.dep_))
+    return taggedTerm
 
 def countWords(wordList):
     return dict(Counter(wordList))
 
-def get_info(content):
-    words = getWords(content)
-    temp_tags = trigram_tag.tag(words)
-    tags = re_tag(temp_tags)
+def getContextTags(content):
+    taggedTerm = tagWords(content)
     normalized = True
     while normalized:
         normalized = False
-        #print("len tag: ", len(tags))
-        #pp.pprint(DictGroupBy(tags))
-        for i in range(0, len(tags) - 1):
-            #print("i: ", i)
-            tagged1 = tags[i]
-            if i+1 >= len(tags) - 1:
+        for i in range(0, len(taggedTerm) - 1):
+            token_1 = taggedTerm[i]
+            if i+1 >= len(taggedTerm) - 1:
                 break
-            tagged2 = tags[i+1]
+            token_2 = taggedTerm[i+1]
 
-            # when word = deal and next word is tagged IN (with, for, etc.) 
-            if tagged1[0]=='deal' and tagged2[1]=='IN':
-                tags.pop(i)
-                tags.pop(i)
-                re_tagged = tagged1[0] + ' ' + tagged2[0]
-                pos='NPI'
-                tags.insert(i, (re_tagged, pos))
+            # chunk nouns
+            if token_1[1] in ('NOUN','PROPN') and token_1[2]=='compound' and token_2[1]!='PUNCT':
+                newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
+                pos = taggedTerm[i+1][1]
+                dep = taggedTerm[i+1][2]
+                taggedTerm.insert(i+2, (newTerm, pos, dep))
+                taggedTerm.pop(i) # remove word 1
+                taggedTerm.pop(i) # remove word 2
                 normalized = True
 
-            else: 
-                key = tagged1[1] + '+' + tagged2[1]
-                pos = cfg.get(key)       
-                if pos:
-                    tags.pop(i)
-                    tags.pop(i)
-                    re_tagged = tagged1[0] + ' ' + tagged2[0]
-                    tags.insert(i, (re_tagged, pos))
-                    normalized = True
+            # chunk nouns with their adjectives
+            elif token_1[1]=='ADJ' and token_2[1] in ('NOUN','PROPN'):
+                newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
+                pos = taggedTerm[i+1][1]
+                dep = taggedTerm[i+1][2]
+                taggedTerm.insert(i+2, (newTerm, pos, dep))
+                taggedTerm.pop(i) # remove word 1
+                taggedTerm.pop(i) # remove word 2
+                normalized = True
 
-    final_context = []
-    for tag in tags:
-        if tag[1] == 'NNP' or tag[1] == 'NNI' or tag[1] == 'VP':
-            final_context.append(tag[0])
+            # capture nouns that are composed of verb + noun (e.g. share price)
+            elif token_1[1]=='VERB' and token_1[2] in ('ccomp') and token_2[1]=='NOUN':
+                newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
+                pos = taggedTerm[i+1][1]
+                dep = taggedTerm[i+1][2]
+                taggedTerm.insert(i+2, (newTerm, pos, dep))
+                taggedTerm.pop(i) # remove word 1
+                taggedTerm.pop(i) # remove word 2
+                normalized = True        
+
+            # chunk hyphenated words
+            elif token_1[2] in ('compound','npadvmod','amod','advmod','nmod') and token_2[0]=='-':
+                newTerm = taggedTerm[i][0]+taggedTerm[i+1][0]+taggedTerm[i+2][0]
+                pos = 'ADJ'
+                dep = 'amod'
+                taggedTerm.insert(i+3, (newTerm, pos, dep))
+                taggedTerm.pop(i) # remove word 1
+                taggedTerm.pop(i) # remove word 2
+                taggedTerm.pop(i) # remove word 3
+                normalized = True
+
+            # chunk numeric terms like money and percents
+            elif token_1[1] in ('SYM','NVAL') and token_1[2] in ('nmod','nummod'):
+                if token_1[1]=='NUM' and token_2[1]=='NOUN':
+                    newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
+                else:
+                    newTerm = taggedTerm[i][0]+taggedTerm[i+1][0]
+                pos = 'NVAL' # number val
+                dep = taggedTerm[i+1][2]
+                taggedTerm.insert(i+2, (newTerm, pos, dep))
+                taggedTerm.pop(i) # remove word 1
+                taggedTerm.pop(i) # remove word 2
+                normalized = True
+
+    highlight_text = []
+    noun_phrases = []
+    for token in taggedTerm:
+        term = token[0]
+        pos = token[1]
+        dep = token[2]
+        if pos in ('NOUN', 'PROPN') and dep not in ('npadvmod','amod','advmod','attr'):
+            if not(pos == 'NOUN' and dep in ('dobj','pobj') and len(term.split())<2):
+                highlight_text.append(term)
+                noun_phrases.append(term)
+        elif pos in ('NOUN', 'PROPN') and dep == 'attr' and len(term.split()) > 2:
+            highlight_text.append(term) 
+            noun_phrases.append(term)
+        elif pos in ('VERB') and dep == 'ROOT':
+            highlight_text.append(term)
+        elif pos in ('NVAL'):
+            highlight_text.append(term)
     
-    return final_context
-
-
-def re_tag(tagged):
-    new_tagged = []
-    for tag in tagged:
-        if tag[1] == 'NP' or tag[1] == 'NP-TL':
-            new_tagged.append((tag[0], 'NNP'))
-        elif tag[1][-3:] == '-TL':
-            new_tagged.append((tag[0], tag[1][:-3]))
-        elif tag[1][-1:] == 'S':
-            new_tagged.append((tag[0], tag[1][:-1]))
-        else:
-            new_tagged.append((tag[0], tag[1]))
-    
-    return new_tagged
+    return highlight_text, noun_phrases
 
 # extract all unigrams based on all words pulled from context extraction
 def unigramBreakdown(fullContext):
-    # to be used as frequency count
-    stopwords = ["myself", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "him", "his", "himself", "she", "her", "hers", "herself", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "are", "was", "were", "been", "being", "have", "has", "had", "having", "does", "did", "doing",  "the", "and", "but", "if", "or", "because", "until", "while", "for", "with", "about", "into", "through", "during", "before", "after", "from", "down", "out", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "nor", "not", "only", "own", "same", "than", "too", "very", "can", "will", "just", "don", "should", "now", "past", "year", "month", "day"]   
+    stopwords = [
+    # dates/times
+      "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
+    , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
+    , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
+    , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
+    , "today","pm","am","daily","day","year"
+    # specific article terms that are useless
+    , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+    , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
+    , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    # other useless terms
+    , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
+    , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
+    , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
+    , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
+    , "couldn", "didn","are","is", "was","will", "have", "be", "were"
+    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
+    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    ]
     
     # separates each word for each article => list of list
     articleUnigrams = []
@@ -184,23 +179,74 @@ def unigramBreakdown(fullContext):
     translator = str.maketrans('', '', string.punctuation)
     unigrams = [term.lower().translate(translator) for term in articleUnigrams if term.lower() not in stopwords and len(term)>2]
     # count frequency of terms
-    # unigrams = countWords(unigrams)
-    
+    # unigrams = countWords(unigrams)  
     return unigrams
 
 # extracts unigrams AND bigrams pulled by context extraction
 def bigramBreakdown(fullContext):
+    stopwords = [
+    # dates/times
+      "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
+    , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
+    , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
+    , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
+    , "today","pm","am","daily","day","year"
+    # specific article terms that are useless
+    , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+    , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
+    , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    # other useless terms
+    , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
+    , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
+    , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
+    , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
+    , "couldn", "didn","are","is", "was","will", "have", "be", "were"
+    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
+    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    ]
     bigrams = []
-    
-    # remove stop words and punctuation
+    # remove punctuation and translate all terms into lowercse
     translator = str.maketrans('', '', string.punctuation)
-    bigrams.extend([term.lower().translate(translator) for term in fullContext if len(term.split()) < 3])
+    #bigrams.extend([term.lower().translate(translator) for term in fullContext if len(term.split()) < 3 and term.lower not in stopwords])
+    bigrams.extend([term.lower() for term in fullContext if len(term.split()) < 3 and term.lower() not in stopwords])
     
     return bigrams
 
 # did this because I couldn't good way to write the switcher to switch to a non-function
-def ngramDummy(fullContext):
-    return fullContext
+def ngramBreakdown(keyterms):
+    stopwords = [
+    # dates/times
+      "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
+    , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
+    , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
+    , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
+    , "today","pm","am","daily","day","year"
+    # specific article terms that are useless
+    , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+    , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
+    , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    # other useless terms
+    , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
+    , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
+    , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
+    , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
+    , "couldn", "didn","are","is", "was","will", "have", "be", "were"
+    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
+    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    ]
+    ngrams = []
+    # remove punctuation and translate all terms into lowercse
+    # translator = str.maketrans('', '', string.punctuation)
+    #bigrams.extend([term.lower().translate(translator) for term in fullContext if len(term.split()) < 3 and term.lower not in stopwords])
+    ngrams.extend([term.lower() for term in keyterms if term.lower() not in stopwords])
+    
+    return ngrams
 
 # PMI For Tag Ranking
 # return binary representation of article in terms of all keyphrases pulled
@@ -294,39 +340,26 @@ def frequencyCounter(binEncDf):
     return freqDf
 
 # Retrieve context
-def retrieveContext(articleDB, termType='bigrams'):
+def retrieveContext(articleDB, termType='ngrams'):
     # import classified articles
     articleDf = articleDB
     
     breakdown = {
-        'ngrams': ngramDummy, # store n-grams pulled from context extraction
+        'ngrams': ngramBreakdown, # store n-grams pulled from context extraction
         'bigrams': bigramBreakdown, # store bigrams and unigrams captured by context extraction
         'unigrams': unigramBreakdown # store unigrams captured by separating all terms pulled by context extraction
         }
     
     for i in articleDf.index:
         # get context for articles
-        keyterms = get_info(articleDf['contentWithStops'].iloc[i])  
-        articleDf.at[i, 'tags'] = ', '.join(breakdown[termType](keyterms))    
+        fullContext, keyTerms = getContextTags(articleDf['contentWithStops'].iloc[i])
+        articleDf.at[i, 'context'] = ', '.join(fullContext) # highlight these terms within article 
+        articleDf.at[i, 'tags'] = ', '.join(breakdown[termType](keyTerms)) # use these as tags as they are limited to noun/noun phrases
     
     # returns article Df with new column for top tags
     articleDf, binaryEncDf = calculatePMI(articleDf, 'tags')
     
     # returns most popular terms mentioned across all articles
     trendingTermsDf = frequencyCounter(binaryEncDf)
-    
-    #Save as excel file (better because weird characters encoded correctly)
-    #DATA_DIR = "Data"
-    #OUTPUT_DIR = os.path.join(DATA_DIR, "results_context.xlsx")
-    #writer = pd.ExcelWriter(OUTPUT_DIR)
-    #articleDf.to_excel(writer,'Sheet1')
-    #writer.save()
-    
-    #Save as excel file (better because weird characters encoded correctly)
-    #DATA_DIR = "Data"
-    #OUTPUT_DIR = os.path.join(DATA_DIR, "trending_terms.xlsx")
-    #writer = pd.ExcelWriter(OUTPUT_DIR)
-    #trendingTermsDf.to_excel(writer,'Sheet1')
-    #writer.save()
 
     return articleDf, trendingTermsDf
