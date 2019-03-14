@@ -52,32 +52,44 @@ def DataClean(articleDf):
         # remove photo credits
         article[:] = [sentence for sentence in article if not('Photo' in sentence)]
         blackList = ['get breaking news','click here','write to','subscribe','read more','read or share'
-                     ,'reporting by','twitter, instagram','comment','copyright','©']
+                     ,'reporting by','twitter, instagram','comment','copyright','©', 'fox', 'you', 'sign up', 'your inbox']
         # remove lines with terms that are associated with useless sentences
         article[:] = [sentence for sentence in article if not any(term in sentence.lower() for term in blackList)]
 
-        articleDf.at[i,'origContent']='\r\n'.join(article)
+        articleDf.at[i,'origContent']=' '.join(article)
 
     #Remove videos from cnbc links
     pat_cnbcVid = re.compile('div &gt; div\.group &gt; p:first-child"&gt;')
     articleDf['origContent'] = list(map(lambda x: pat_cnbcVid.sub('', x), articleDf['origContent']))
+    pat_vid = re.compile('gt;')
+    articleDf['origContent'] = list(map(lambda x: pat_vid.sub('', x), articleDf['origContent']))
     #Remove amp;
     pat_amp = re.compile('amp;')
-    articleDf['origContent'] = list(map(lambda x: pat_amp.sub('', x), articleDf['origContent']))
-
+    articleDf['origContent'] = list(map(lambda x: pat_amp.sub('', x), articleDf['origContent']))    
+    
     # CLEAN CONTENT FOR FEATURE SELECTION articleDf['content'] AND CONTEXT EXTRACTION articleDf['contentWithStops'] 
 
     #Remove time
     pat_time = re.compile('[0-9]{0,2}:?[0-9]{1,2}\s?[aApP]\.?[mM]\.?')
-    articleDf['content'] = list(map(lambda x: pat_time.sub(' ', x), articleDf['origContent'].str.lower()))
+    articleDf['content'] = list(map(lambda x: pat_time.sub(' ', x), articleDf['origContent']))
 
     #Remove urls
     pat_url = re.compile('[a-z]+?[.]?[a-z]+?[.]?[a-z]+[.]?[\/\/]\S+')
     articleDf['content'] = list(map(lambda x: pat_url.sub('URL', x), articleDf['content']))
     pat_https = re.compile('https://')
     articleDf['content'] = list(map(lambda x: pat_https.sub('', x), articleDf['content']))
-
-    #Remove stopwords
+    pat_http = re.compile('http://')
+    articleDf['content'] = list(map(lambda x: pat_http.sub('', x), articleDf['content']))
+    
+    #Remove characters that don't separate a sentence or aren't $ signs
+    # FOR context extraction
+    # Remove non-ascii chars -- these get cleaned up in 'content' when we remove punctuation
+    pat_nonascii = re.compile('[^\x00-\x7f]')
+    articleDf['contentWithStops'] = list(map(lambda x: pat_nonascii.sub(' ', x), articleDf['content']))
+    #pat_nonStops = re.compile('[^\.\?!,;\$0-9a-zA-Z]+')
+    #articleDf['contentWithStops'] = list(map(lambda x: pat_nonStops.sub(' ', x), articleDf['content']))
+    
+    #Remove stopwords & apply lowercasing
     stopwords = [
         # dates/times
         "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning", "evening","today","pm","am","daily", 
@@ -92,11 +104,6 @@ def DataClean(articleDf):
     #Remove single character words
     pat_charLim = re.compile('\s[a-zA-Z]\s')
     articleDf['content'] = list(map(lambda x: pat_charLim.sub(' ', x), articleDf['content']))
-
-    #Remove characters that don't separate a sentence or aren't $ signs
-    # FOR context extraction
-    pat_nonStops = re.compile('[^\.\?!,;\$0-9a-zA-Z]+')
-    articleDf['contentWithStops'] = list(map(lambda x: pat_nonStops.sub(' ', x), articleDf['content']))
 
     #Remove punctuation 
     # FOR feature selection/encoding
