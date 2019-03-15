@@ -23,7 +23,12 @@ import operator
 import re
 import spacy
 # python -m spacy download en
-nlp = spacy.load('en') #spacy PoS tagger
+try:
+    nlp = spacy.load('en') #spacy PoS tagger
+except:
+    import en_core_web_sm
+    nlp = en_core_web_sm.load()
+
 
 #Progress bar
 from tqdm import tqdm

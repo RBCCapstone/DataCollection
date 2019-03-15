@@ -1,3 +1,4 @@
+
 # coding: utf-8
 
 # # Feature Encoding
@@ -10,7 +11,7 @@
 # * Proper Nouns should keep their capitals
 # * Punctuation/Stemming etc not incorporated
 # * Bi-grams not accommodated
-# * Could be converted to space matrix
+# * Could be converted to sparse matrix
 # * No log function incorporated at this point
 #     
 # 
@@ -25,28 +26,58 @@ from collections import Counter
 from nltk.tokenize import RegexpTokenizer
 import os
 from pathlib import Path
-from tqdm import tqdm
-
-
-# In[2]:
-
-
-#import pyscripter
-
-#relevant_nbs = ['FeatureSelection.ipynb']
-#relevant_nbs = pyscripter.nb_to_py(relevant_nbs)
-#print("y print 2x?")
-#print(relevant_nbs)
-#pyscripter.import_scripts(['FeatureSelection.py'])
 
 
 # In[3]:
 
 
-def loadData(articleDB):
+# Testing Word Normalization
+import nltk
+
+## Download Resources
+nltk.download("vader_lexicon")
+nltk.download("stopwords")
+nltk.download("averaged_perceptron_tagger")
+nltk.download("wordnet")
+
+from nltk.stem import *
+
+# download required resources
+nltk.download("wordnet")
+
+# we'll compare two stemmers and a lemmatizer
+lrStem = LancasterStemmer()
+sbStem = SnowballStemmer("english")
+prStem = PorterStemmer()
+wnLemm = WordNetLemmatizer()
+def wnLemm_v(word):
+    return WordNetLemmatizer.lemmatize(word, 'v')
+
+
+#def loadData(articleDB):
+#    DATA_DIR = "Data"
+#    FEATURES_DIR = os.path.join(DATA_DIR, "retailFeatureSet.csv")
+#    #ARTICLES_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
+
+#    fts = pd.read_csv(FEATURES_DIR)
+#    for col in fts.columns:
+#        if not (col.strip() == 'target_group'):
+#            fts = fts.drop([col], axis = 1)
+#    fts.columns = ['index']
+#    fts['index'] = list(map(lambda x: x.strip(), fts['index']))
+#    arts = articleDB
+#    artText = arts['content'] 
+#    artID = arts['url']   #**
+#    data = {'fts':fts, 'artText': artText, 'artID': artID} #**
+#    return data
+
+def loadData(articleDB, text_col='content', norm='wnLemm'):
     DATA_DIR = "Data"
-    FEATURES_DIR = os.path.join(DATA_DIR, "retailFeatureSet.csv")
-    #ARTICLES_DIR = os.path.join(DATA_DIR, "cleanedArticles.xlsx")
+    feature_filename = norm + text_col + 'FeatureSet.csv'
+    print(text_col)
+    print(norm)
+    FEATURES_DIR = os.path.join(DATA_DIR, feature_filename)
+    #ARTICLES_DIR = os.path.join(DATA_DIR, "Labelled_Articles_cleaned.xlsx")
     
     fts = pd.read_csv(FEATURES_DIR)
     for col in fts.columns:
@@ -55,42 +86,40 @@ def loadData(articleDB):
     fts.columns = ['index']
     fts['index'] = list(map(lambda x: x.strip(), fts['index']))
     arts = articleDB
-    artText = arts['content'] 
-    artID = arts['url']   #**
-    data = {'fts':fts, 'artText': artText, 'artID': artID} #**
+    
+    # Stripping out columns and only passing what we need
+    artText = arts[text_col]
+    data = {'fts':fts, 'artText': artText} #**
     return data
 
 
-# In[4]:
 
-
-def binEncoding(data):
+def binEncoding(data, normalizer=None):
     print("Binary Encoding")
     fts = data['fts']
     artText = data['artText']
-    
     df_rows = []
     tokenizer = RegexpTokenizer(r'\w+')
 
-    for art in tqdm(artText):
+    for art in artText:
         if type(art) == str: 
             body = art.lower()
             #body = clean_file_text(body)
-            ##art_words = tokenizer.tokenize(body)
-            ##df_rows.append([1 if word in art_words else 0 for word in fts['index']])
-            body = body.split() #**
-            wordsCounter = Counter(body)
-            df_rows.append([1 if word in wordsCounter else 0 for word in fts['index']])
+            art_words = tokenizer.tokenize(body)
+            #insert word normalization
+            if normalizer:
+                art_words = [normalizer(word) for word in art_words]
+            
+            df_rows.append([1 if word in art_words else 0 for word in fts['index']])
         else:
             df_rows.append([0 for word in fts['index']])
     X = pd.DataFrame(df_rows, columns = fts['index'].values)
+    print('market_moving' in list(X))
     return X
 
 
-# In[5]:
 
-
-def tfEncoding(data):
+def tfEncoding(data, normalizer=None):
     print("tf Encoding")
     fts = data['fts']
     artText = data['artText']
@@ -108,10 +137,7 @@ def tfEncoding(data):
     return X
 
 
-# In[6]:
-
-
-def tfidfEncoding(data):
+def tfidfEncoding(data, normalizer=None):
     print("tifidf Encoding")
     fts = data['fts']
 
@@ -139,71 +165,51 @@ def tfidfEncoding(data):
     return X
 
 
-# In[7]:
-
-
-def encoding(encodeType, **kwargs):
+def encoding(encodeType, df=None, text_col=None, norm=None, **kwargs):
     # 0 for Binary Encoding
     # 1 for Term Frequency Encoding
     # 2 for TF-IDF Encoding
     # If you'd like to save as csv, use "csv = True"
         
     # Load up data
-    if 'df' in kwargs:
-        data = loadData(kwargs['df'])
-    else:
-        data = loadData()
-        
+    data = loadData(df, text_col=text_col, norm=norm)
+    
     # Run corresponding encoding type and pass data
     options = {0 : binEncoding,
                 1 : tfEncoding,
                 2 : tfidfEncoding,}
     
-    X = options[encodeType](data)
-    X['article_id'] = data['artID'].values #**
+    if norm:
+        normalizers = {'lrStem' : lrStem.stem,
+                       'sbStem' : sbStem.stem,
+                       'prStem' : prStem.stem,
+                       'wnLemm' : wnLemm.lemmatize,
+                       'wnLemm-v':wnLemm_v,
+                       'baseline':None
+                      }
+        normalizer = normalizers[norm]
+    
+    X = options[encodeType](data, normalizer)
+    X = X.drop(['market_moving'], axis = 1) if 'market_moving' in list(X) else X
+    
+    # Append Y column and article ids
     
     # Save as csv file in CLASSIFICATION data folder =)
     if ('csv' in kwargs) and (kwargs['csv']):
         
         # File path for this file
-        file_name = options[encodeType].__name__ + '.csv'
+        file_name = text_col +'-'+ norm +'-'+  options[encodeType].__name__ + '.csv'
         thispath = Path().absolute()
         #OUTPUT_DIR = os.path.join(thispath.parent.parent, "Classification", "Data", file_name)
         # if the following line throws an error, use the line after to save in same folder
         OUTPUT_DIR = os.path.join(thispath, "Data", file_name)
-        pd.DataFrame.to_csv(X, path_or_buf=OUTPUT_DIR)
-        #pd.DataFrame.to_csv(X, path_or_buf=file_name)
+        pd.DataFrame.to_csv(XY, path_or_buf=OUTPUT_DIR)
+        #pd.DataFrame.to_csv(XY, path_or_buf=file_name)
     
     # Return Panda DataFrame
     return X
     
 
-
 def main(): # Stuff to do when run from the command line    
-    enc = encoding(0, csv = True)
-    return enc 
- 
-
-
-# In[9]:
-
-
-#testcell
-
-#X = encoding(1, csv=True)
-#X = encoding(2, csv=True)
-#X = encoding(0, csv=True)
-#X.head()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+    encoding(0, csv = True)
+    pass  

@@ -17,12 +17,26 @@ def LoadData(filename):
     data = pd.read_csv(ENCODING_DIR)
     return data
 
-def runLogReg(binaryMatrix, articleDB):
+def runLogReg(titleMx, contentMx, articleDB):
     #X = LoadData(filename) # This would be named to whatever today's binEncoding file is called
+    body_fts = 350
+    title_fts = 30 # number of features to use for titles
+    title_w = 5      # weight of features to use for titles
     
-    X = binaryMatrix
-    artID = X['article_id']
-    X = X.drop(columns=['article_id'])
+    X = contentMx.drop(list(contentMx)[body_fts-1:], axis=1)
+    #artID = X['article_id']
+    artID = articleDB['url']
+    #X = X.drop(columns=['article_id'])
+    
+    # Combine title and body feature sets as desired
+
+    # Load the data, keep desired number of title features, multiply them by desired weight, then join to data
+    data_title = titleMx
+    #data_title = data_title.drop(columns= ['Unnamed: 0'])        
+    data_title = data_title.drop(list(data_title)[title_fts:], axis=1)
+    data_title = data_title*title_w
+
+    X = X.join(data_title, rsuffix = '-title')
 
     #print(X.head(20))
     classifier = pickle.load(open("ourClassifier.p", "rb"))
@@ -37,6 +51,7 @@ def runLogReg(binaryMatrix, articleDB):
     scores['prediction'] = y_predict
     
     #rename Columns
+    print(scores.columns)
     scores.columns = ['nonRel', 'Rel', 'url', 'prediction']
     
     #rank articles from most to least relevant

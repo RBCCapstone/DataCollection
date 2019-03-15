@@ -28,9 +28,11 @@ def FrontPage(articleDB, trendingTermsDB):
     
     # get articles
     art = articleDB.iloc[0:numArts][['title','source', 'date', 'origContent']]
+    print(art)
     art['tags'] = list(map(lambda x: x.split(','), articleDB.iloc[0:numArts]['tags_top_5']))
     # grab related article IDs
     rel_arts = list(map(lambda x: x.split(','), articleDB.iloc[0:numArts]['related_articles']))
+    print(rel_arts)
     # use IDs to grab related article title, source, url, turn into little dictionaries and add to art
     art['related_articles'] = list(map(lambda num: articleDB.iloc[num][['title','source','url']].to_dict(orient='records'), rel_arts))
     
@@ -42,7 +44,8 @@ def FrontPage(articleDB, trendingTermsDB):
     
     # output final json
     frontpage = {"topterms":topTerms, "articles":artDict}
+    frontpage2 = frontpage
     with open("frontPage.json", "w") as write_file:
         json.dump(frontpage, write_file)
     
-    return frontpage
+    return frontpage2
