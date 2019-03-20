@@ -29,7 +29,6 @@ except:
     import en_core_web_sm
     nlp = en_core_web_sm.load()
 
-
 #Progress bar
 from tqdm import tqdm
 
@@ -41,20 +40,21 @@ def tagWords(article):
     taggedTerm = []
     stopwords = [
         # dates/times
-        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
+          "january", "february", "march", "april", "may", "june", "july", "august", "september", "october"
         , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
         , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
-        ,"today","pm","am","daily", 
+        ,"today","pm","am","daily" 
         # specific article terms that are useless
-        "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+        , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
         , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
-        ,"said","nbcuniversal","newsletterupgrade","nbc", "news",'url',"cbc"
+        , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url',"cbc"
         # other useless terms
-        "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
+        , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
         , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
         , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
         , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
-        , "couldn", "didn","are","is", "was","will", "have", "be", "such"
+        , "couldn", "didn","are","is", "was","will", "have", "be", "such","did","put"
+        , "mr", "mr.", "ms", "ms.","mrs", "mrs."
     ]
     for token in taggedArticle:
         if token.text.lower() not in stopwords and len(token.text)>2:
@@ -106,7 +106,7 @@ def getContextTags(content):
                 normalized = True        
 
             # chunk hyphenated words
-            elif token_1[2] in ('compound','npadvmod','amod','advmod','nmod') and token_2[0]=='-':
+            elif token_1[2] in ('compound','npadvmod','amod','advmod','nmod','intj') and token_2[0]=='-':
                 newTerm = taggedTerm[i][0]+taggedTerm[i+1][0]+taggedTerm[i+2][0]
                 pos = 'ADJ'
                 dep = 'amod'
@@ -136,15 +136,13 @@ def getContextTags(content):
         pos = token[1]
         dep = token[2]
         if pos in ('NOUN', 'PROPN') and dep not in ('npadvmod','amod','advmod','attr'):
-            if not(pos == 'NOUN' and dep in ('dobj','pobj') and len(term.split())<2):
+            if not(pos == 'NOUN' and len(term.split())<2):
                 highlight_text.append(term)
                 noun_phrases.append(term)
         elif pos in ('NOUN', 'PROPN') and dep == 'attr' and len(term.split()) > 2:
             highlight_text.append(term) 
             noun_phrases.append(term)
-        elif pos in ('VERB') and dep == 'ROOT':
-            highlight_text.append(term)
-        elif pos in ('NVAL'):
+        elif pos in ('NVAL'): # highlight number values
             highlight_text.append(term)
     
     return highlight_text, noun_phrases
@@ -157,22 +155,24 @@ def unigramBreakdown(fullContext):
     , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
     , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
     , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
-    , "today","pm","am","daily","day","year"
+    , "today","pm","am","daily","day", "year"
     # specific article terms that are useless
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    , 'business insider', 'new york times', "wall street journal"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
     , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
     , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
     , "couldn", "didn","are","is", "was","will", "have", "be", "were"
-    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
-    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , "company", "people", "president", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "order","talk",'team', 'brands', 'program'
     , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
-    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
-    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "job", "member", "members"
+    , "staying", "possibility","part", "none","showing", "one"
+    , "us", "u.s", "u.s.", "united states", "america", "united states of america", "usa", "states"
     ]
     
     # separates each word for each article => list of list
@@ -195,22 +195,24 @@ def bigramBreakdown(fullContext):
     , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
     , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
     , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
-    , "today","pm","am","daily","day","year"
+    , "today","pm","am","daily","day", "year"
     # specific article terms that are useless
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    , 'business insider', 'new york times', "wall street journal"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
     , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
     , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
     , "couldn", "didn","are","is", "was","will", "have", "be", "were"
-    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
-    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , "company", "people", "president", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "order","talk",'team', 'brands', 'program'
     , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
-    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
-    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "job", "member", "members"
+    , "staying", "possibility","part", "none","showing", "one"
+    , "us", "u.s.", "united states", "america", "united states of america", "usa", "states"
     ]
     bigrams = []
     # remove punctuation and translate all terms into lowercse
@@ -228,22 +230,24 @@ def ngramBreakdown(keyterms):
     , "november", "december", "jan", "feb","mar", "apr", "jun", "jul", "aug", "oct", "nov", "dec"
     , "jan.", "feb.","mar.", "apr.", "jun.", "jul.", "aug.", "oct.", "nov.", "dec."
     , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
-    , "today","pm","am","daily","day","year"
+    , "today","pm","am","daily","day", "year"
     # specific article terms that are useless
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
+    , 'business insider', 'new york times', "wall street journal"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
     , "itself", "they", "them", "their", "theirs","themselves", "what", "which", "who", "whom"
     , "this", "that", "these", "those", "theyve", "theyre", "theres", "heres", "didnt", "wouldn"
     , "couldn", "didn","are","is", "was","will", "have", "be", "were"
-    , "company", "people", "president", "u.s.", "others", "times", "percent","number", "companies", "business"
-    , "world", "state", "america","order","talk",'team', 'brands', 'program', 'business insider', 'new york times'
+    , "company", "people", "president", "others", "times", "percent","number", "companies", "business"
+    , "world", "state", "order","talk",'team', 'brands', 'program'
     , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
-    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "half"
-    , "staying", "possibility","part", "none","showing", "one", "members", "member", "job"
+    , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "job", "member", "members"
+    , "staying", "possibility","part", "none","showing", "one"
+    , "us", "u.s.", "united states", "america", "united states of america", "usa", "states"
     ]
     ngrams = []
     # remove punctuation and translate all terms into lowercse
