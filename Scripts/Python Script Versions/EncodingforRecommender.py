@@ -37,7 +37,6 @@ def getFeatures(ArticleDB):
     artText = ArticleDB["content"]
     countVect = CountVectorizer(binary=True)
     vector = countVect.fit(artText)
-    #print(X_train_counts)
     features= countVect.vocabulary_
     fts = list(features.keys())
     
@@ -176,43 +175,4 @@ def recommender(ArticleDB):
     finalTable = ArticleDB.join(finalMatches, how='left')
     
     return finalTable
-
-
-# In[20]:
-
-
-#binEncoded = RecBinaryEncoding(fts, artText)
-#binEncoded.head()
-
-
-# In[15]:
-
-
-#tfEncoded = TfEncoding(fts,artText)
-#tfEncoded.head()
-
-
-# In[62]:
-
-
-#tfidfEncoded = tfidfEncoding(fts, artText)
-#tfidfEncoded.head()
-
-
-# In[63]:
-
-
-#finalTable = recommender(tfidfEncoded, ArticleDB)
-
-
-# In[60]:
-
-
-#finalTable.head()
-
-
-# In[56]:
-
-
-#finalTable.to_excel("TFidfEncodedNewStop.xlsx")
 
