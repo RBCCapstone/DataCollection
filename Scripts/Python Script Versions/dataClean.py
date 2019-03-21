@@ -61,7 +61,7 @@ def DataClean(articleDf):
         except:
             continue
         
-        articleDf.at[i,'origContent']='</p> <p>'.join(article))
+        articleDf.at[i,'origContent']='</p> <p>'.join(article)
 
     #Remove videos from cnbc links
     pat_cnbcVid = re.compile('div &gt; div\.group &gt; p:first-child"&gt;')
@@ -74,9 +74,13 @@ def DataClean(articleDf):
     
     # CLEAN CONTENT FOR FEATURE SELECTION articleDf['content'] AND CONTEXT EXTRACTION articleDf['contentWithStops'] 
 
+    #Remove html tags
+    pat_htmlTags = re.compile(r'<.*?>')
+    articleDf['content'] = list(map(lambda x: pat_htmlTags.sub('', x), articleDf['origContent']))
+    
     #Remove time
     pat_time = re.compile('[0-9]{0,2}:?[0-9]{1,2}\s?[aApP]\.?[mM]\.?')
-    articleDf['content'] = list(map(lambda x: pat_time.sub(' ', x), articleDf['origContent']))
+    articleDf['content'] = list(map(lambda x: pat_time.sub(' ', x), articleDf['content']))
 
     #Remove urls
     pat_url = re.compile('[a-z]+?[.]?[a-z]+?[.]?[a-z]+[.]?[\/\/]\S+')

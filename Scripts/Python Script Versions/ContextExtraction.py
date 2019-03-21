@@ -57,8 +57,12 @@ def tagWords(article):
         , "mr", "mr.", "ms", "ms.","mrs", "mrs."
     ]
     for token in taggedArticle:
-        if token.text.lower() not in stopwords and len(token.text)>2:
-            taggedTerm.append((token.text,token.pos_,token.dep_))
+        if token.text.lower() not in stopwords:
+            if len(token.text)>2:
+                taggedTerm.append((token.text,token.pos_,token.dep_))
+            else: # collect numbers and symbols (percents, dollar signs, etc.)
+                if token.text.isdigit() or token.text == '%': taggedTerm.append((token.text,token.pos_,token.dep_))
+            
     return taggedTerm
 
 def countWords(wordList):
@@ -135,13 +139,10 @@ def getContextTags(content):
         term = token[0]
         pos = token[1]
         dep = token[2]
-        if pos in ('NOUN', 'PROPN') and dep not in ('npadvmod','amod','advmod','attr'):
+        if pos in ('NOUN', 'PROPN') and dep not in ('npadvmod','amod','advmod'):
             if not(pos == 'NOUN' and len(term.split())<2):
                 highlight_text.append(term)
                 noun_phrases.append(term)
-        elif pos in ('NOUN', 'PROPN') and dep == 'attr' and len(term.split()) > 2:
-            highlight_text.append(term) 
-            noun_phrases.append(term)
         elif pos in ('NVAL'): # highlight number values
             highlight_text.append(term)
     
@@ -157,7 +158,7 @@ def unigramBreakdown(fullContext):
     , "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "morning","evening"
     , "today","pm","am","daily","day", "year"
     # specific article terms that are useless
-    , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
+    , "read", "file", "n't","'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
     , 'business insider', 'new york times', "wall street journal","washington post"
@@ -172,7 +173,7 @@ def unigramBreakdown(fullContext):
     , 'family', 'everyone', 'per', 'house', 'case', 'someone', 'something', 'anyone',"person"
     , "co.", "co", "inc.", "inc", ".com", "com", "report", "things", "thing", "job", "member", "members"
     , "staying", "possibility","part", "none","showing", "one"
-    , "us", "u.s", "u.s.", "united states", "america", "united states of america", "usa", "states"
+    , "us", "u.s", "u.s.", "united states", "america", "americans", "united states of america", "usa", "states"
     ]
     
     # separates each word for each article => list of list
