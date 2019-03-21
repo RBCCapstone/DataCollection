@@ -121,8 +121,8 @@ def getContextTags(content):
                 normalized = True
 
             # chunk numeric terms like money and percents
-            elif token_1[1] in ('SYM','NVAL') and token_1[2] in ('nmod','nummod'):
-                if token_1[1]=='NUM' and token_2[1]=='NOUN':
+            elif token_1[1] in ('NUM','SYM','NVAL') and token_1[2] in ('nmod','nummod'):
+                if token_1[1] in ('NUM','NVAL') and token_2[1]=='NOUN':
                     newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
                 else:
                     newTerm = taggedTerm[i][0]+taggedTerm[i+1][0]
