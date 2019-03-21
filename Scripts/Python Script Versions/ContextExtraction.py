@@ -160,7 +160,7 @@ def unigramBreakdown(fullContext):
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
-    , 'business insider', 'new york times', "wall street journal"
+    , 'business insider', 'new york times', "wall street journal","washington post"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
@@ -200,7 +200,7 @@ def bigramBreakdown(fullContext):
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
-    , 'business insider', 'new york times', "wall street journal"
+    , 'business insider', 'new york times', "wall street journal","washington post"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
@@ -235,7 +235,7 @@ def ngramBreakdown(keyterms):
     , "read", "file", "'s","'t", "photo", "inc", "corp", "group", "inc", "corp", "source"
     , "bloomberg", "cnbc","cnbcs", "cnn", "reuters","bbc", "published", "broadcast","msnbc","ap"
     , "said","nbcuniversal","newsletterupgrade","nbc", "news",'url', "more information","cbc"
-    , 'business insider', 'new york times', "wall street journal"
+    , 'business insider', 'new york times', "wall street journal","washington post"
     # other useless terms
     , "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself"
     , "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its"
