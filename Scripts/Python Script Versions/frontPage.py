@@ -28,18 +28,19 @@ def FrontPage(articleDB, trendingTermsDB):
     
     # get articles
     art = articleDB.iloc[0:numArts][['title','source', 'date', 'origContent', 'url']]
-    art = art.sort_values(by=['date'], axis = 0, ascending = False)
+    
     art['tags'] = list(map(lambda x: x.split(','), articleDB.iloc[0:numArts]['tags_top_5']))
     # grab related article IDs
     rel_arts = list(map(lambda x: x.split(','), articleDB.iloc[0:numArts]['related_articles']))
     # use IDs to grab related article title, source, url, turn into little dictionaries and add to art
     art['related_articles'] = list(map(lambda num: articleDB.iloc[num][['title','source','url']].to_dict(orient='records'), rel_arts))
-    
+    art = art.sort_values(by=['date'], axis = 0, ascending = False)    
     artDict = art.to_dict(orient='records')
-        
+    
+    
     # get top terms
     tuples = [tuple(x) for x in trendingTermsDB.values]
-    topTerms = tuples[:10]
+    topTerms = tuples[:15]
     
     # output final json
     frontpage = {"topterms":topTerms, "articles":artDict}

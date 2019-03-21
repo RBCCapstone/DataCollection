@@ -55,8 +55,13 @@ def DataClean(articleDf):
                      ,'reporting by','twitter, instagram','comment','copyright','©', 'fox', 'you', 'sign up', 'your inbox']
         # remove lines with terms that are associated with useless sentences
         article[:] = [sentence for sentence in article if not any(term in sentence.lower() for term in blackList)]
-
-        articleDf.at[i,'origContent']=' \r\n '.join(article)
+        try:
+            article[0] = '<p>'+article[0]
+            article[len(article)-1] = article[len(article)-1]+'</p>'
+        except:
+            continue
+        
+        articleDf.at[i,'origContent']='</p> <p>'.join(article))
 
     #Remove videos from cnbc links
     pat_cnbcVid = re.compile('div &gt; div\.group &gt; p:first-child"&gt;')
