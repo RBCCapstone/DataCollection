@@ -61,7 +61,7 @@ def tagWords(article):
             if len(token.text)>2:
                 taggedTerm.append((token.text,token.pos_,token.dep_))
             else: # collect numbers and symbols (percents, dollar signs, etc.)
-                if token.text.isdigit() or token.text == '%': taggedTerm.append((token.text,token.pos_,token.dep_))
+                if token.text.isdigit() or token.text in ('%'): taggedTerm.append((token.text,token.pos_,token.dep_))
             
     return taggedTerm
 
@@ -121,17 +121,25 @@ def getContextTags(content):
                 normalized = True
 
             # chunk numeric terms like money and percents
-            elif token_1[1] in ('NUM','SYM','NVAL') and token_1[2] in ('nmod','nummod'):
-                if token_1[1] in ('NUM','NVAL') and token_2[1]=='NOUN':
-                    newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]
-                else:
+            elif token_1[1] in ('NUM','SYM','NVAL') and token_1[2] in ('nmod','nummod','quantmod','compound'):
+                if token_1[1] in ('NVAL') and token_2[1] == 'NOUN' and token_2[2] != 'pobj':
+                    break
+                elif token_1[1] in ('SYM'):
                     newTerm = taggedTerm[i][0]+taggedTerm[i+1][0]
-                pos = 'NVAL' # number val
-                dep = taggedTerm[i+1][2]
-                taggedTerm.insert(i+2, (newTerm, pos, dep))
-                taggedTerm.pop(i) # remove word 1
-                taggedTerm.pop(i) # remove word 2
-                normalized = True
+                    pos = 'NVAL' # number val
+                    dep = taggedTerm[i+1][2]
+                    taggedTerm.insert(i+2, (newTerm, pos, dep))
+                    taggedTerm.pop(i) # remove word 1
+                    taggedTerm.pop(i) # remove word 2
+                    normalized = True
+                else:
+                    newTerm = taggedTerm[i][0]+" "+taggedTerm[i+1][0]                  
+                    pos = 'NVAL' # number val
+                    dep = taggedTerm[i+1][2]
+                    taggedTerm.insert(i+2, (newTerm, pos, dep))
+                    taggedTerm.pop(i) # remove word 1
+                    taggedTerm.pop(i) # remove word 2
+                    normalized = True
 
     highlight_text = []
     noun_phrases = []
@@ -325,7 +333,7 @@ def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mkt_moving'):
         
         pmineglist = pd.DataFrame(pmineglist)
         pmineglist.columns = ['word','pmi']
-        artDf.at[i,'tags_top_5'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(5)['word'])   
+        artDf.at[i,'tags_top_5'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(5)['word'])    
     return artDf
 
 # Functions to run extraction and rank tags
