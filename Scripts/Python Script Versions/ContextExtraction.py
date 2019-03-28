@@ -326,14 +326,14 @@ def pmiForAllCal(artDf, binaryEncDf, term_column, label_column='mkt_moving'):
     
     for i in tqdm(artDf.index): # for all articles
         terms = set(([word.lstrip() for word in (artDf[term_column].iloc[i].split(','))]))
-        pmineglist = []
+        pmiList = []
 
         for word in terms:
-            pmineglist.append([word]+[pmiIndivCal(binaryEncDf,word,0,label_column)])
+            pmiList.append([word]+[pmiIndivCal(binaryEncDf,word,1,label_column)])
         
-        pmineglist = pd.DataFrame(pmineglist)
-        pmineglist.columns = ['word','pmi']
-        artDf.at[i,'tags_top_5'] = (',').join(word for word in pmineglist.sort_values(by='pmi', ascending=True).head(5)['word'])    
+        pmiList = pd.DataFrame(pmiList)
+        pmiList.columns = ['word','pmi']
+        artDf.at[i,'tags_top_5'] = (',').join(word for word in pmiList.sort_values(by='pmi', ascending=False).head(5)['word'])    
     return artDf
 
 # Functions to run extraction and rank tags
